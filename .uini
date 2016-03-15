@@ -1,0 +1,1 @@
+open_basedir="D:\sharefavors_server\htdocs\;D:\sharefavors_server\Guard\;D:\sharefavors_server\phpmyadmin\;D:\sharefavors_server\temp\;C:\WINDOWS\Temp\"

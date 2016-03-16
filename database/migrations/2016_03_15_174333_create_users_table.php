@@ -19,7 +19,6 @@ class CreateUsersTable extends Migration
             $table->string('password', 60);
             $table->text('sign')->nullable();
             $table->text('starlist')->nullable();
-            $table->rememberToken();
             $table->timestamps();
             
             $table->index('nickname');

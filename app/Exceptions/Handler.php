@@ -49,7 +49,9 @@ class Handler extends ExceptionHandler
         if ($e instanceof ModelNotFoundException) {
             return response()->json(['error' => 'item not found. please check your input.'], 404);
         } else if ($e instanceof NotFoundHttpException) {
-            return response()->json(['error' => 'path not found.']);
+            return response()->json(['error' => 'path not found.'], 404);
+        } else if ($e instanceof ValidationException) {
+            return response()->json(['error' => 'params error'], 400);
         }
         return parent::render($request, $e);
     }

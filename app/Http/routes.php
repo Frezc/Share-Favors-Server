@@ -11,10 +11,17 @@
 |
 */
 
+
+
 Route::get('/', function () {
     return view('welcome');
 });
-
+Route::get('test', function () {
+    return 'ok';
+});
+Route::get('sendVerifiedEmail', 'SendEmailController@sendMail');
+Route::get('respository','');
+Route::get('respository/{id}','');
 /*
 |--------------------------------------------------------------------------
 | Application Routes

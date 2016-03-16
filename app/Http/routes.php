@@ -16,12 +16,26 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
 Route::get('test', function () {
     return 'ok';
 });
+
 Route::get('sendVerifiedEmail', 'SendEmailController@sendMail');
-Route::get('respository','');
-Route::get('respository/{id}','');
+
+Route::post('auth', 'AuthenticateController@auth');
+
+//需要验证token的api
+Route::group(['middleware' => 'jwt.auth'], function() {
+    
+});
+
+//刷新token的api
+Route::group(['middleware' => 'jwt.refresh'], function() {
+    Route::get('refreshToken', 'AuthenticateController@refreshToken');
+});
+// Route::get('respository','');
+// Route::get('respository/{id}','');
 /*
 |--------------------------------------------------------------------------
 | Application Routes

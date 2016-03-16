@@ -4,7 +4,6 @@ namespace App\Exceptions;
 
 use Exception;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -51,7 +50,7 @@ class Handler extends ExceptionHandler
         } else if ($e instanceof NotFoundHttpException) {
             return response()->json(['error' => 'path not found.'], 404);
         } else if ($e instanceof ValidationException) {
-            return response()->json(['error' => 'params error'], 400);
+            return response()->json(['error' => $e->errors()], 400);
         }
         return parent::render($request, $e);
     }

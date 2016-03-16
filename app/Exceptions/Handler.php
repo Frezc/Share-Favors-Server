@@ -50,7 +50,11 @@ class Handler extends ExceptionHandler
         } else if ($e instanceof NotFoundHttpException) {
             return response()->json(['error' => 'path not found.'], 404);
         } else if ($e instanceof ValidationException) {
-            return response()->json(['error' => $e->errors()], 400);
+            return response()->json(['error' => 'params invalid'], 400);
+        } else if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenExpiredException) {
+            return response()->json(['error' => 'token_expired'], $e->getStatusCode());
+        } else if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException) {
+            return response()->json(['error' => 'token_invalid'], $e->getStatusCode());
         }
         return parent::render($request, $e);
     }

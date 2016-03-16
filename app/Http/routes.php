@@ -31,9 +31,8 @@ Route::group(['middleware' => 'jwt.auth'], function() {
 });
 
 //刷新token的api
-Route::group(['middleware' => 'jwt.refresh'], function() {
-    Route::get('refreshToken', 'AuthenticateController@refreshToken');
-});
+Route::get('refreshToken', 'AuthenticateController@refreshToken');
+
 // Route::get('respository','');
 // Route::get('respository/{id}','');
 /*

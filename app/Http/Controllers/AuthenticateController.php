@@ -27,7 +27,12 @@ class AuthenticateController extends Controller
         return $token;
     }
     
-    public function refreshToken() {
-        return 'refreshed';
+    public function refreshToken(Request $request) {
+        $this->validate($request, [
+            'token' => 'required'
+        ]);
+        
+        //todo
+        return JWTAuth::refresh($request->input('token'));
     }
 }

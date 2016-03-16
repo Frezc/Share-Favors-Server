@@ -16,8 +16,8 @@ class CreateRepositoriesTable extends Migration
             $table->increments('id');
             $table->string('name', 100);
             $table->integer('creator')->unsigned();
-            $table->text('tags')->nullable();
             $table->tinyInteger('status')->default('1'); //1 for public, 0 for private
+            $table->integer('stars')->unsigned()->default(0);
             $table->integer('stars')->unsigned()->default(0);
             $table->timestamps();
             

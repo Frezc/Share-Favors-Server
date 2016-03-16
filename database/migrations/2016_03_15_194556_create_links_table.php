@@ -18,7 +18,6 @@ class CreateLinksTable extends Migration
             $table->integer('creator')->unsigned();
             $table->text('description')->nullable();
             $table->string('url');
-            $table->text('tags')->nullable();
             $table->timestamps();
             
             $table->index(['title', 'creator']);

@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateTagreposTable extends Migration
+class CreateTaglinkTable extends Migration
 {
     /**
      * Run the migrations.
@@ -12,12 +12,12 @@ class CreateTagreposTable extends Migration
      */
     public function up()
     {
-        Schema::create('tagrepos', function (Blueprint $table) {
+        Schema::create('taglink', function (Blueprint $table) {
             $table->integer('tagid')->unsigned();
-            $table->text('repos');
+            $table->integer('linkid')->unsigned();
             $table->timestamps();
             
-            $table->index('tagid');
+            $table->index(['tagid', 'linkid']);
         });
     }
 
@@ -28,6 +28,6 @@ class CreateTagreposTable extends Migration
      */
     public function down()
     {
-        Schema::drop('tagrepos');
+        Schema::drop('taglink');
     }
 }

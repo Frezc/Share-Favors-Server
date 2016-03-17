@@ -14,7 +14,7 @@ class CreateEmailverificationsTable extends Migration
     {
         //
          Schema::create('emailverifications', function (Blueprint $table) {
-            $table->string('code',6);
+            $table->string('code', 6);
             $table->string('email')->unique();
             $table->timestamps();
         });

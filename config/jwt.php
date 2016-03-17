@@ -32,7 +32,8 @@ return [
     | Defaults to 1 hour
     |
     */
-
+    
+    //1 day
     'ttl' => 1440,
 
     /*

@@ -15,12 +15,12 @@ class CreateLinksTable extends Migration
         Schema::create('links', function (Blueprint $table) {
             $table->increments('id');
             $table->string('title', 100);
-            $table->integer('creator')->unsigned();
             $table->text('description')->nullable();
-            $table->string('url');
+            $table->tinyInteger('status')->default('1'); //1 for public, 0 for private
+            $table->string('url')->unique();
             $table->timestamps();
             
-            $table->index(['title', 'creator']);
+            $table->index(['title']);
         });
     }
 

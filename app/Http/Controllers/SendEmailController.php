@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use Mail;
 use App\Http\Requests;
 
 class SendEmailController extends Controller
@@ -14,7 +14,6 @@ class SendEmailController extends Controller
             'email' => 'email|required'
         ]);
         $email = $request->input('email');
-        dd($email);
         Mail::send('emails.reminder', ['email' => $email], function ($m) use ($email) {
             $m->to($email)->subject('Your Reminder!');
          });

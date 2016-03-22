@@ -49,3 +49,7 @@ Route::get('refreshToken', 'AuthenticateController@refreshToken');
 Route::group(['middleware' => ['web']], function () {
     //
 });
+
+Route::resource('respository', 'RespositoryController', ['except' => [
+    'create', 'edit'
+]]);

@@ -17,6 +17,6 @@ class SendEmailController extends Controller
         Mail::send('emails.reminder', ['email' => $email], function ($m) use ($email) {
             $m->to($email)->subject('Your Reminder!');
          });
-        return 'success';
+        return 'sendsuccess';
     }
 }

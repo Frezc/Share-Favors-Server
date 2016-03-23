@@ -9,8 +9,13 @@ use App\Tag;
 use App\Link;
 use App\Repolist;
 
+use JWTAuth;
+
 class RespositoryController extends Controller
 {
+    public function __construct() {
+        $this->middleware('jwt.auth');
+    }
     
     public function index(Request $request) {
         
@@ -31,7 +36,11 @@ class RespositoryController extends Controller
         $oneRepo = Repository::findOrFail($id);
         
         if(!$oneRepo->status){
-            //验证token
+            //验证用户
+            $user = JWTAuth::parseToken()->authenticate();
+            if($user->id != $oneRepo->creator){
+                return "wrong user";
+            }
         }
 
         $result = array();

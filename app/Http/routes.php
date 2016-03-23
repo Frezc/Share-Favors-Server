@@ -25,6 +25,8 @@ Route::get('sendVerifiedEmail', 'SendEmailController@sendMail');
 
 Route::post('auth', 'AuthenticateController@auth');
 
+Route::post('register', 'AuthenticateController@register');
+
 //需要验证token的api
 Route::group(['middleware' => 'jwt.auth'], function() {
     
@@ -32,6 +34,7 @@ Route::group(['middleware' => 'jwt.auth'], function() {
 
 //刷新token的api
 Route::get('refreshToken', 'AuthenticateController@refreshToken');
+
 
 // Route::get('respository','');
 // Route::get('respository/{id}','');

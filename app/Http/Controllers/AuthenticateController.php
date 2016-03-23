@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Http\Request;
+use App\EmailVerification;
+use App\User;
+use Hash;
 
 class AuthenticateController extends Controller
 {
@@ -34,5 +37,28 @@ class AuthenticateController extends Controller
         
         //todo
         return JWTAuth::refresh($request->input('token'));
+    }
+    
+    public function register(Request $request) {
+        $this->validate($request, [
+            'email'     => 'email|required|unique:users,email',
+            'password'  => 'required|between:6,64',
+            'nickname'  => 'required|max:32',
+            'code'      => 'required'
+        ]);
+        $email = $request->input('email');
+        $code = $request->input('code');
+        $verification = EmailVerification::where('email',$email)->firstOrFail();
+        if($code != $verification->code) {
+            return "wrong code Registration reject";
+        }
+        
+        $user = new User;
+        $user->email = $request->input('email');
+        $user->nickname = $request->input('nickname');
+        $user->password = Hash::make($request->input('password'));
+        $user->save();
+        
+        return $user->nickname." regist successful";
     }
 }

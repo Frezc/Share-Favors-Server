@@ -21,8 +21,6 @@ Route::get('test', function () {
     return 'ok';
 });
 
-Route::get('sendVerifiedEmail', 'SendEmailController@sendMail');
-
 Route::post('auth', 'AuthenticateController@auth');
 
 Route::post('register', 'AuthenticateController@register');
@@ -53,6 +51,10 @@ Route::group(['middleware' => ['web']], function () {
     //
 });
 
+Route::group(['middleware' => 'throttle:30'], function () {
+    Route::get('sendVerifiedEmail', 'SendEmailController@sendMail');
+});
+
 Route::resource('respository', 'RespositoryController', ['except' => [
-    'create', 'edit'
+     'edit'
 ]]);

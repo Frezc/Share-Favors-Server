@@ -91,4 +91,8 @@ class RespositoryController extends Controller
     public function destroy(Request $request) {
         
     }
+    
+    public function create() {
+        
+    }
 }

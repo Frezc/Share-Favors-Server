@@ -38,7 +38,7 @@
     <body>
         <div class="container">
             <div class="content">
-                <div class="title">你的请求{{$email}}已通过</div>
+                <div class="title">你的请求{{$email}}已通过，验证码为{{$code}}</div>
             </div>
         </div>
     </body>

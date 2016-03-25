@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Tag extends Model
 {
+    protected $fillable = ['text', 'used'];
     public function repositories() {
         return $this->belongsToMany('App\Repositoty');
     }

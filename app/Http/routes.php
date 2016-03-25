@@ -33,9 +33,7 @@ Route::group(['middleware' => 'jwt.auth'], function() {
 //刷新token的api
 Route::get('refreshToken', 'AuthenticateController@refreshToken');
 
-
-// Route::get('respository','');
-// Route::get('respository/{id}','');
+Route::get('user/{id}', 'AuthenticateController@getUserinfo');
 /*
 |--------------------------------------------------------------------------
 | Application Routes
@@ -51,10 +49,11 @@ Route::group(['middleware' => ['web']], function () {
     //
 });
 
-Route::group(['middleware' => 'throttle:30'], function () {
+Route::group(['middleware' => 'throttle:2'], function () {
     Route::get('sendVerifiedEmail', 'SendEmailController@sendMail');
 });
-
-Route::resource('respository', 'RespositoryController', ['except' => [
-     'edit'
-]]);
+Route::post('repository', 'RepositoryController@create');
+Route::get('repository/{id}', 'RepositoryController@show');
+// Route::resource('repository', 'RepositoryController', ['except' => [
+//      'edit'
+// ]]);

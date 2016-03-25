@@ -20,7 +20,7 @@ class SendEmailController extends Controller
         EmailVerification::create(['email' => $email, 'code' => $code]);
         
         Mail::send('emails.reminder', ['email' => $email, 'code' => $code], function ($m) use ($email) {
-            $m->to($email)->subject('Your  verification code is ');
+            $m->to($email)->subject('Your verification code');
          });
         
         return 'sendsuccess';

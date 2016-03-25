@@ -24,4 +24,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 'remember_token',
     ];
+    
+    public function stars() {
+        return $this->belongsToMany('App\Repository', 'starlists', 'userid', 'repoid');
+    }
 }

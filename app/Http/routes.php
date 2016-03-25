@@ -34,6 +34,7 @@ Route::group(['middleware' => 'jwt.auth'], function() {
 Route::get('refreshToken', 'AuthenticateController@refreshToken');
 
 Route::get('user/{id}', 'AuthenticateController@getUserinfo');
+Route::get('user/{userId}/repository', 'AuthenticateController@showUserRepo');
 /*
 |--------------------------------------------------------------------------
 | Application Routes

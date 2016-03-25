@@ -37,6 +37,7 @@ class AuthenticateController extends Controller
         $user->stars;
         
         foreach( $user->stars as $repodetail){
+            //循环查表设置名字，待优化
             setCreator($repodetail);
             $repodetail->tags;            
             $starlist[] = $repodetail->toArray();
@@ -105,6 +106,7 @@ class AuthenticateController extends Controller
         $userinfo['starlist'] = array();
         $starlist = $user->stars()->where('status', 1)->orderBy('updated_at', 'DESC')->take($starListMax)->get();
         foreach($starlist as $star) {
+            //循环查表设置名字，待优化
             setCreator($star);
             $star->tags;
             $userinfo['starlist'][] = $star->toArray();
@@ -115,11 +117,52 @@ class AuthenticateController extends Controller
                                                   ->take($repositoriesMax)
                                                   ->get();
         foreach($repolist as $repo) {
-            setCreator($repo);
+            setCreatorName($repo, $user->nickname);
             $repo->tags;
             $userinfo['repositories'][] = $repo->toArray();
         }
         
         return response()->json($userinfo);
+    }
+    
+    public function showUserRepo(Request $request, $userId) {
+        $this->validate($request, [
+            'offset'      => 'integer',
+            'limit'       => 'integer',
+            'recentItems' => 'integer|max:12',
+            'token'       => 'string'
+        ]);
+        $token = $request->input('token');
+        $limit = $request->input('limit', 12);
+        $offset = $request->input('offset', 0);
+        $recentItems = $request->input('recentItems', 3);
+        if(!empty($token)) {
+            $user = JWTAuth::authenticate($token);
+             if($user->id == $userId) {
+                $repoList = Repository::where('creator', $userId)
+                                    ->orderBy('updated_at', 'DESC')
+                                    ->take($limit)
+                                    ->get();
+                $response = ['showAll' => 1];
+             }
+        }
+        else{
+            $repoList = Repository::where('creator', $userId)->where('status', 1)
+                                  ->orderBy('updated_at', 'DESC')
+                                  ->take($limit)->get();
+             $response = ['showAll' => 0];
+             $user = User::findOrFail($userId);
+        }
+        $response['repolist'] = array();
+        $response['repoNumAll'] = Repository::where('creator', $userId)->count();
+        $count = 0;
+        foreach($repoList as $repo) {
+            $repo->tags;
+            setCreatorName($repo, $user->nickname);
+            $response['repolist'][] = $repo;
+            $count = $count+1;
+        }
+        $response['repoNum'] = $count;
+        return response()->json($response);
     }
 }

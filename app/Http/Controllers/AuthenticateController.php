@@ -9,6 +9,11 @@ use App\EmailVerification;
 use App\User;
 use App\Repository;
 use App\Tag;
+use App\Repolist;
+use App\Link;
+use App\TagRepo;
+use App\TagLink;
+
 use Hash;
 
 class AuthenticateController extends Controller
@@ -35,7 +40,6 @@ class AuthenticateController extends Controller
         $starlist = array();
         
         $user->stars;
-        
         foreach( $user->stars as $repodetail){
             //循环查表设置名字，待优化
             setCreator($repodetail);
@@ -44,7 +48,7 @@ class AuthenticateController extends Controller
         }
         
         $userdetail = ["sign" => $user->sign, "starlist" =>$starlist, "nickname" => $user->nickname, "email" => $user->email];
-        $package = ["token" => $token, "expired_at" => time()+86400, "user" => $userdetail];
+        $package = ["token" => $token, "expired_at" => time()+86400, "user" => $user];
         
         return response()->json($package);
     }
@@ -133,7 +137,7 @@ class AuthenticateController extends Controller
             'token'       => 'string'
         ]);
         $token = $request->input('token');
-        $limit = $request->input('limit', 12);
+        $limit = $request->input('limit', 100);
         $offset = $request->input('offset', 0);
         $recentItems = $request->input('recentItems', 3);
         if(!empty($token)) {
@@ -145,24 +149,100 @@ class AuthenticateController extends Controller
                                     ->get();
                 $response = ['showAll' => 1];
              }
+             else{
+                $repoList = Repository::where('creator', $userId)->where('status', 1)
+                                  ->orderBy('updated_at', 'DESC')
+                                  ->take($limit)->get();
+                $response = ['showAll' => 0];
+                $user = User::findOrFail($userId);
+             }
         }
         else{
-            $repoList = Repository::where('creator', $userId)->where('status', 1)
+             $repoList = Repository::where('creator', $userId)->where('status', 1)
                                   ->orderBy('updated_at', 'DESC')
                                   ->take($limit)->get();
              $response = ['showAll' => 0];
              $user = User::findOrFail($userId);
         }
+       
         $response['repolist'] = array();
         $response['repoNumAll'] = Repository::where('creator', $userId)->count();
         $count = 0;
+        //$repodetail = array();
+        foreach($repoList as $repo) {
+            $repoIdList[] = $repo['id'];
+        }
+        
+        $recentItemList = Repolist::whereIn('repoid', $repoIdList)
+                                  ->orderBy('updated_at', 'DESC')->get();
+        
+        //$repodetail = array();
+        $searchRepo = array();
+        $searchLink = array();
+        //dd($recentItemList->toArray());
+        foreach($recentItemList as $item) {
+            if($item->type == 0) {
+                $searchRepo[] = $item->itemid;
+            }
+            if($item->type == 1) {
+                $searchLink[] = $item->itemid;
+            }
+        }
+        //dd($searchLink);
+        $ReposResult = Repository::whereIn('id', deMul($searchRepo))->orderBy('updated_at', 'DESC')->get();
+        $LinksResult = Link::whereIn('id', deMul($searchLink))->orderBy('updated_at', 'DESC')->get();
+        //dd($ReposResult);
+        addTagsToRepo($ReposResult);
+        addTagsToLink($LinksResult);
+        //dd($LinksResult);
+        $getLinkById = array();
+        $getRepoById = array();
+        foreach($ReposResult as $Repo) {
+            $getRepoById[$Repo->id] = $Repo;
+        }
+        dd($getRepoById);
+        foreach($recentItemList as $item) {
+            $length = count( isset($getLinkById[$item->repoid]) ? $getLinkById[$item->repoid] : null ) 
+                      + count( isset($getRepoById[$item->repoid]) ? $getLinkById[$item->repoid] : null);
+            if($length > $recentItems){ 
+                continue;
+            }
+            //仓库为0 link是1
+            //施工中
+            if($item->type == 0){
+                $getLinkById[$item->repoid][] = $ReposResult;
+            }
+            if($item->type == 1){
+                
+            }
+        }
         foreach($repoList as $repo) {
             $repo->tags;
             setCreatorName($repo, $user->nickname);
-            $response['repolist'][] = $repo;
+            $response['repolist']= [ 'repostory' => $repo, 'recentItems' => isset($repodetail[ $repo['id'] ])?$repodetail[ $repo['id'] ] : null ];
             $count = $count+1;
         }
+        //dd($response['repolist']);
         $response['repoNum'] = $count;
+        $recentItemList = Repolist::where('repoid', $userId)
+                                  ->orderBy('updated_at', 'DESC')
+                                  ->take($recentItems)->get();
+        $searchRepo = array();
+        $searchLink = array();
+        foreach($recentItemList as $reItem) {
+            //仓库为0 link是1
+            if($reItem->type == 0) {
+                $searchRepo[] = $reItem->itemid;
+            }
+            else{
+                $searchLink[] = $reItem->itemid;
+            }
+        }
+        //dd($searchRepo);
+        $ReposResult = Repository::whereIn('id', $searchRepo)->orderBy('updated_at', 'DESC')->get();
+        $LinksResult = Link::whereIn('id', $searchLink)->orderBy('updated_at', 'DESC')->get();
+        //dd($ReposResult);
+        $response['recentItems'] = array();
         return response()->json($response);
     }
 }

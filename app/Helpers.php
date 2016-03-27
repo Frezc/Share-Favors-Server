@@ -32,7 +32,29 @@ function searchCreator($items) {
         $creatorNames[$creator->id] = $creator->nickname;
     }
     foreach($items as &$item) {
-        $item['creatorName'] = $creatorNames[$item['creator']];
+        $item['creatorName'] = isset($creatorNames[$item['creator']])?$creatorNames[$item['creator']]:null;
+        $item['creatorId'] = $item['creator'];
+        unset($item['creator']);
+    }
+    return $items;
+}
+
+function searchCreatorFromObject($items) {
+    //输入数组
+    $itemId= array();
+    $filp = array();
+    $idSeach = array();
+    foreach($items as $item ) {
+        $itemId[] = $item->creator;
+    }
+    $flip = array_flip($itemId);
+    $idSeach = array_flip($flip);
+    $creatorNames = [];
+    foreach(User::whereIn('id', $idSeach)->get() as $creator) {
+        $creatorNames[$creator->id] = $creator->nickname;
+    }
+    foreach($items as &$item) {
+        $item['creatorName'] = isset($creatorNames[$item['creator']])?$creatorNames[$item['creator']]:null;
         $item['creatorId'] = $item['creator'];
         unset($item['creator']);
     }

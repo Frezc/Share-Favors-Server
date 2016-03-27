@@ -171,6 +171,7 @@ class AuthenticateController extends Controller
         //$repodetail = array();
         foreach($repoList as $repo) {
             $repoIdList[] = $repo['id'];
+             $count = $count+1;
         }
         
         $recentItemList = Repolist::whereIn('repoid', $repoIdList)
@@ -197,52 +198,61 @@ class AuthenticateController extends Controller
         //dd($LinksResult);
         $getLinkById = array();
         $getRepoById = array();
+        searchCreatorFromObject($ReposResult);
+        searchCreatorFromObject($LinksResult);
         foreach($ReposResult as $Repo) {
             $getRepoById[$Repo->id] = $Repo;
+            //setCreatorName($repo, $user->nickname);
         }
-        dd($getRepoById);
+        foreach($LinksResult as $Link) {
+            $getLinkById[$Link->id] = $Link;
+        }
+        //dd($getRepoById);
         foreach($recentItemList as $item) {
             $length = count( isset($getLinkById[$item->repoid]) ? $getLinkById[$item->repoid] : null ) 
-                      + count( isset($getRepoById[$item->repoid]) ? $getLinkById[$item->repoid] : null);
-            if($length > $recentItems){ 
+                      + count( isset($getRepoById[$item->repoid]) ? $getRepoById[$item->repoid] : null);
+            if($length >= $recentItems){ 
                 continue;
             }
             //仓库为0 link是1
             //施工中
             if($item->type == 0){
-                $getLinkById[$item->repoid][] = $ReposResult;
+                $itemList[$item->repoid][] = ['repository' => isset($getRepoById[$item->itemid])?$getRepoById[$item->itemid] : null, 'type' => 0];
             }
             if($item->type == 1){
-                
+                $itemList[$item->repoid][] = ['link' => isset($getLinkById[$item->itemid])?$getLinkById[$item->itemid] : null, 'type'=> 1];
             }
         }
+        //json_encode
+        // dd(json_encode($itemList));
         foreach($repoList as $repo) {
-            $repo->tags;
-            setCreatorName($repo, $user->nickname);
-            $response['repolist']= [ 'repostory' => $repo, 'recentItems' => isset($repodetail[ $repo['id'] ])?$repodetail[ $repo['id'] ] : null ];
-            $count = $count+1;
+            //$repo->tags;
+            //setCreatorName($repo, $user->nickname);
+            $response['repolist'][]= [ 'repostory' => $repo, 'recentItems' => isset($itemList[ $repo['id'] ]) ? $itemList[ $repo['id'] ]: null ];
+            //$count = $count+1;
         }
         //dd($response['repolist']);
         $response['repoNum'] = $count;
-        $recentItemList = Repolist::where('repoid', $userId)
-                                  ->orderBy('updated_at', 'DESC')
-                                  ->take($recentItems)->get();
-        $searchRepo = array();
-        $searchLink = array();
-        foreach($recentItemList as $reItem) {
-            //仓库为0 link是1
-            if($reItem->type == 0) {
-                $searchRepo[] = $reItem->itemid;
-            }
-            else{
-                $searchLink[] = $reItem->itemid;
-            }
-        }
+        // $recentItemList = Repolist::where('repoid', $userId)
+        //                           ->orderBy('updated_at', 'DESC')
+        //                           ->take($recentItems)->get();
+        // $searchRepo = array();
+        // $searchLink = array();
+        // foreach($recentItemList as $reItem) {
+        //     仓库为0 link是1
+        //     if($reItem->type == 0) {
+        //         $searchRepo[] = $reItem->itemid;
+        //     }
+        //     else{
+        //         $searchLink[] = $reItem->itemid;
+        //     }
+        // }
         //dd($searchRepo);
-        $ReposResult = Repository::whereIn('id', $searchRepo)->orderBy('updated_at', 'DESC')->get();
-        $LinksResult = Link::whereIn('id', $searchLink)->orderBy('updated_at', 'DESC')->get();
+        //$ReposResult = Repository::whereIn('id', $searchRepo)->orderBy('updated_at', 'DESC')->get();
+        //$LinksResult = Link::whereIn('id', $searchLink)->orderBy('updated_at', 'DESC')->get();
         //dd($ReposResult);
-        $response['recentItems'] = array();
+        //$response['recentItems'] = array();
+        //$response['recentItems'] = $itemList;
         return response()->json($response);
     }
 }

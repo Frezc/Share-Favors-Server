@@ -137,7 +137,7 @@ class AuthenticateController extends Controller
             'token'       => 'string'
         ]);
         $token = $request->input('token');
-        $limit = $request->input('limit', 100);
+        $limit = $request->input('limit', 12);
         $offset = $request->input('offset', 0);
         $recentItems = $request->input('recentItems', 3);
         if(!empty($token)) {
@@ -199,7 +199,7 @@ class AuthenticateController extends Controller
         $getLinkById = array();
         $getRepoById = array();
         searchCreatorFromObject($ReposResult);
-        searchCreatorFromObject($LinksResult);
+        //searchCreatorFromObject($LinksResult);
         foreach($ReposResult as $Repo) {
             $getRepoById[$Repo->id] = $Repo;
             //setCreatorName($repo, $user->nickname);
@@ -228,7 +228,7 @@ class AuthenticateController extends Controller
         foreach($repoList as $repo) {
             //$repo->tags;
             //setCreatorName($repo, $user->nickname);
-            $response['repolist'][]= [ 'repostory' => $repo, 'recentItems' => isset($itemList[ $repo['id'] ]) ? $itemList[ $repo['id'] ]: null ];
+            $response['repolist'][]= [ 'repostory' => $repo, 'recentItems' => isset($itemList[ $repo['id'] ]) ? $itemList[ $repo['id'] ]: [] ];
             //$count = $count+1;
         }
         //dd($response['repolist']);

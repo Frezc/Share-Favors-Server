@@ -16,10 +16,9 @@ class CreateLinksTable extends Migration
             $table->increments('id');
             $table->string('title', 100);
             $table->text('description')->nullable();
-            $table->tinyInteger('status')->default('1'); //1 for public, 0 for private
-            $table->string('url')->unique();
+            $table->string('url');
             $table->timestamps();
-            
+            $table->string('getId', 6);
             $table->index(['title']);
         });
     }

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use Validator;
 use App\Repository;
 use App\Tag;
 use App\Link;
@@ -31,7 +31,7 @@ class RepositoryController extends Controller
         $oneRepo = Repository::findOrFail($id);
         if(!$oneRepo->status){
             $user = JWTAuth::authenticate($token);
-            if($user->id!=$oneRepo->creator) {
+            if($user->id != $oneRepo->creator) {
                 return "wrong user";
             }
         }
@@ -121,5 +121,152 @@ class RepositoryController extends Controller
         setCreator($newRepo);
         
         return response()->json($newRepo);
+    }
+    
+    public function updateItems(Request $request, $repoId) {
+         $this->validate($request, [
+            'tags'        => 'array|required',
+            'tags.*'      => 'string',
+            'name'        => 'string|required',
+            'description' => 'string|required',
+            'status'      => 'integer|required',
+            'token'       => 'string|required'
+        ]);
+    }
+    
+    public function addItems(Request $request, $repoId) {
+        //dd($request);
+        //dd($request->toArray());
+         $this->validate($request, [
+            'token' => 'string|required',
+            'items' => 'array|required' 
+        ]);
+        
+        $token = $request->input('token');
+        $user = JWTAuth::authenticate($token);
+        $thisRepo = Repository::findOrFail($repoId);
+        $haveRepo = Repolist::where('repoid', $repoId)->where('type', 0)->lists('itemid');
+        //dd($haveRepo->toA);
+        if($thisRepo->creator != $user->id) {
+            return "wrong user not allowed";
+        }
+        
+        $addItems = $request->input('items');
+        $creatLinkList = array();
+        foreach ($addItems as $addItem) {
+            $v = Validator::make($addItem, [
+                'type' => 'integer|required|between:0,1'
+            ]);
+            if ($v->fails()) {
+                return  "something wrong in v";
+            }
+             //dd(1);
+            // $this->validate($addItem, [
+            //     'type' => 'integer|required|between:0,1' 
+            // ]);
+            //dd($addItem);
+            $itemType = $addItem['type'];
+            if($itemType == 0) {
+                 $v1 = Validator::make($addItem, [
+                'repoId'        => 'integer|required'
+                ]);
+                if ($v1->fails()) {
+                return  "something wrong in v1";
+                }
+                $addRepoList[] = $addItem['repoId'];
+            }
+            elseif($itemType == 1) {
+                $v2 = Validator::make($addItem, [
+                'link.tags'    => 'array',
+                'link.tags.*.text'  => 'string',
+                'link.tags.*.id' => 'integer',
+                'link.tags.*.used' => 'integer',
+                'link.id'      => 'integer',
+                'link.description'  => 'string|required',
+                'link.title'        => 'string|required',
+                'link.url'          => 'string|required'
+                ]);
+                //需测试没有id的情况]
+                if ($v2->fails()) {
+                return  "something wrong in v2";
+                }
+                //dd($addItem);
+                if(!empty( $addItem['link']['id'] )) {
+                    //dd($addItem['link']);
+                    $addLinkList[] = $addItem['link']['id'];
+                }
+                else {
+                    //dd(1);
+                    $token = str_random(6);
+                    $creatLinkList[] = [ 
+                        'title' => $addItem['link']['title'], 
+                        'description' => $addItem['link']['description'], 
+                        'url' => $addItem['link']['url'], 
+                        'created_at' => date("Y-m-d H:i:s",time()),
+                        'updated_at' => date("Y-m-d H:i:s",time()),
+                        'getId' => $token;
+                        ];
+                   // $item = new Link;
+                    //$item->title = $request->input('link.title');
+                    //$item->creator = $user->id;
+                    //$item->description = $request->input('link.description');
+                   // $item->url = $request->input('link.url');
+                }
+            }
+            else {
+                return "no such type";
+            }
+        } 
+        //dd($creatLinkList);
+        $repolistInsert = array();
+        if(!empty($creatLinkList)) {
+           
+           Link::insert($creatLinkList);
+           $newLinks = Link::where('getId', $token)->lists('id');
+           
+        }
+        if(!empty($addLinkList)) {
+            $searchLinkResult = Link::whereIn('id', $addLinkList)->get();
+            foreach($searchLinkResult as $Link) {
+                $repolistInsert[] = [
+                    'repoid' => $repoId, 
+                    'type' => 1, 
+                    'itemid' => $Link->id,
+                    'created_at' => date("Y-m-d H:i:s",time()),
+                    'updated_at' => date("Y-m-d H:i:s",time())
+                    ];
+            }
+        }
+        if(!empty($addRepoList)) {
+            deMul($addRepoList);
+            $addRepo = array_diff($addRepoList, $haveRepo->toArray());
+            $searchRepoResult = Repository::whereIn('id', $addRepo)->get();
+            foreach($searchRepoResult as $Repo) {
+                $repolistInsert[] = [
+                    'repoid' => $repoId, 
+                    'type' => 0, 
+                    'itemid' => $Repo->id,
+                    'created_at' => date("Y-m-d H:i:s",time()),
+                    'updated_at' => date("Y-m-d H:i:s",time())
+                    ];
+            }
+        }
+        
+        if(!empty($repolistInsert)) {
+            Repolist::insert($repolistInsert);
+        }
+        
+        return "add item success";
+    }
+    
+    public function deleteItems(Request $request, $repoId) {
+         $this->validate($request, [
+            'tags'        => 'array|required',
+            'tags.*'      => 'string',
+            'name'        => 'string|required',
+            'description' => 'string|required',
+            'status'      => 'integer|required',
+            'token'       => 'string|required'
+        ]);
     }
 }

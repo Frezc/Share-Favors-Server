@@ -58,3 +58,6 @@ Route::get('repository/{id}', 'RepositoryController@show');
 // Route::resource('repository', 'RepositoryController', ['except' => [
 //      'edit'
 // ]]);
+Route::delete('repository/{repoId}/list', 'RepositoryController@deleteItems');
+Route::post('repository/{repoId}/list','RepositoryController@addItems');
+Route::put('repository/{repoId}/list', 'RepositoryController@updateItems');

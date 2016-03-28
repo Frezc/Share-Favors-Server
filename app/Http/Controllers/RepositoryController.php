@@ -141,7 +141,7 @@ class RepositoryController extends Controller
             'token' => 'string|required',
             'items' => 'array|required' 
         ]);
-        
+        $getIdByToken = str_random(6);
         $token = $request->input('token');
         $user = JWTAuth::authenticate($token);
         $thisRepo = Repository::findOrFail($repoId);
@@ -197,14 +197,14 @@ class RepositoryController extends Controller
                 }
                 else {
                     //dd(1);
-                    $token = str_random(6);
+                    
                     $creatLinkList[] = [ 
                         'title' => $addItem['link']['title'], 
                         'description' => $addItem['link']['description'], 
                         'url' => $addItem['link']['url'], 
                         'created_at' => date("Y-m-d H:i:s",time()),
                         'updated_at' => date("Y-m-d H:i:s",time()),
-                        'getId' => $token;
+                        'getId' => $getIdByToken
                         ];
                    // $item = new Link;
                     //$item->title = $request->input('link.title');
@@ -222,8 +222,17 @@ class RepositoryController extends Controller
         if(!empty($creatLinkList)) {
            
            Link::insert($creatLinkList);
-           $newLinks = Link::where('getId', $token)->lists('id');
-           
+           $newLinks = Link::where('getId', $getIdByToken)->lists('id');
+           Link::where('getId', $getIdByToken)->update(array('getId' => null));
+           foreach($newLinks as $Link) {
+                $repolistInsert[] = [
+                    'repoid' => $repoId, 
+                    'type' => 1, 
+                    'itemid' => $Link,
+                    'created_at' => date("Y-m-d H:i:s",time()),
+                    'updated_at' => date("Y-m-d H:i:s",time())
+                    ];
+            }
         }
         if(!empty($addLinkList)) {
             $searchLinkResult = Link::whereIn('id', $addLinkList)->get();

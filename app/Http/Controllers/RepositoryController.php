@@ -30,9 +30,12 @@ class RepositoryController extends Controller
         $token    = $request->input('token');
         $oneRepo = Repository::findOrFail($id);
         if(!$oneRepo->status){
+            if (!$token) {
+                return response()->json(['error' => 'This repository is invisible'], 403);
+            }
             $user = JWTAuth::authenticate($token);
             if($user->id != $oneRepo->creator) {
-                return "wrong user";
+                return response()->json(['error' => 'This repository is invisible'], 403);
             }
         }
         $result = array();

@@ -12,7 +12,7 @@ class SendEmailController extends Controller
     //发送邮件给
     public function sendMail(Request $request){
         $this->validate($request, [
-            'email' => 'email|required|unique:users,email'
+            'email' => 'email|required'
         ]);
         $email = $request->input('email');
         $code=str_random(6);

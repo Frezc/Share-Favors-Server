@@ -74,11 +74,39 @@ class RepositoryController extends Controller
     }
 
     public function update(Request $request) {
+        $this->validate($request, [
+            'token' => 'string|required',
+            'repoName' => 'string|required' 
+        ]);
+        
+        $token = $request->input('token');
+        $user = JWTAuth::authenticate($token);
+        $thisRepo = Repository::firstOrFail();
+        if($thisRepo->creator != $user->id) {
+            return response()->json(['error' => 'wrong user']);
+        }
+        
         
     }
 
-    public function destroy(Request $request) {
+    public function destroy(Request $request, $id) {
+        //dd($request->toArray());
+         $this->validate($request, [
+            'token' => 'string|required',
+            'repoName' => 'string|required' 
+        ]);
+        //dd($request);
+        $token = $request->input('token');
+        $user = JWTAuth::authenticate($token);
+        $thisRepo = Repository::where('id', $id)->where('name', $request->repoName)->firstOrFail();
+        if($thisRepo->creator != $user->id) {
+            return response()->json(['error' => 'wrong user']);
+        }
+        //TagRepo::where('repoid', $id)->delete();
+        //Repolist::where('repoid', $id)->delete();
+        $thisRepo->delete();
         
+        return "success";
     }
     
     public function create(Request $request) {

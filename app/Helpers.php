@@ -40,7 +40,7 @@ function searchCreator($items) {
 }
 
 function searchCreatorFromObject($items) {
-    //输入数组
+    //输入对象
     $itemId= array();
     $filp = array();
     $idSeach = array();
@@ -93,7 +93,7 @@ function addTagsToRepo($itemList) {
     //dd($itemList->toArray());
     //dd($TagRepoById);
     foreach($itemList as $item) {
-        $item['tags'] = isset($TagRepoById[$item->id]) ? $TagRepoById[$item->id] : null ;
+        $item['tags'] = isset($TagRepoById[$item->id]) ? $TagRepoById[$item->id] : [] ;
     }
 }
 //link批量加tag

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use App\EmailVerification;
 use App\User;
 use App\Repository;
@@ -19,6 +20,7 @@ use Hash;
 class AuthenticateController extends Controller
 {
     public function auth(Request $request) {
+        
         $this->validate($request, [
             'email' => 'email|required',
             'password' => 'required'
@@ -33,23 +35,24 @@ class AuthenticateController extends Controller
         } catch (JWTException $e) {
             return response()->json(['error' => 'could_not_create_token'], 500);
         }
-        
+        //dd(1);
         $user = User::where('email', $credentials['email'])->firstOrFail();
-        
-        $starlist = ["nickname" => $user->nickname, "email" => $user->email];
-        $starlist = array();
-        
-        $user->stars;
-        foreach( $user->stars as $repodetail){
-            //循环查表设置名字，待优化
-            setCreator($repodetail);
-            $repodetail->tags;            
-            $starlist[] = $repodetail->toArray();
-        }
-        
-        $userdetail = ["sign" => $user->sign, "starlist" =>$starlist, "nickname" => $user->nickname, "email" => $user->email];
+        //$starlist = array();
+        //$starlist = [];
+        //$starlist = ["nickname" => $user->nickname, "email" => $user->email];
+        $user->starlist;
+        searchCreatorFromObject($user['starlist']);
+        addTagsToRepo($user['starlist']);
+        // foreach( $user->starlist as $repodetail){
+        //     循环查表设置名字，待优化
+        //     setCreator($repodetail);
+        //     $repodetail->tags;            
+        //     $starlist[] = $repodetail->toArray();
+        // }
+        //if($starlist == null)
+        //$userdetail = ["sign" => $user->sign, "starlist" =>$starlist, "nickname" => $user->nickname, "email" => $user->email];
         $package = ["token" => $token, "expired_at" => time()+86400, "user" => $user];
-        
+        //dd(1);
         return response()->json($package);
     }
     
@@ -74,10 +77,14 @@ class AuthenticateController extends Controller
         $nickname = $request->input('nickname');
         $password = $request->input('password');
         
-        $verification = EmailVerification::where('email',$email)->firstOrFail();
+        try{
+            $verification = EmailVerification::where('email',$email)->firstOrFail();
+        }catch( \Exception  $e){
+            return response()->json(['error' => "Your email needs to be authenticated."], 400);
+        }
         
         if($code != $verification->code) {
-            return "wrong code Registration reject";
+            return response()->json(['error' => 'wrong code'], 400);
         }
         
         $user = new User;
@@ -87,8 +94,8 @@ class AuthenticateController extends Controller
         $user->save();
         
         EmailVerification::where('email',$email)->delete();
-        
-        return $user->nickname." regist successful";
+        //dd(1);
+        return $this->auth($request);
     }
     
     public function getUserinfo(Request $request, $id) {

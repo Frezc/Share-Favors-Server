@@ -25,7 +25,7 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
     
-    public function stars() {
+    public function starlist() {
         return $this->belongsToMany('App\Repository', 'starlists', 'userid', 'repoid');
     }
 }

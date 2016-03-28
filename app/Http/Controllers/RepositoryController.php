@@ -9,6 +9,7 @@ use App\Tag;
 use App\Link;
 use App\Repolist;
 use App\TagRepo;
+use App\TagLink;
 use JWTAuth;
 
 class RepositoryController extends Controller
@@ -222,6 +223,19 @@ class RepositoryController extends Controller
         } 
         //dd($creatLinkList);
         $repolistInsert = array();
+        if(!empty($addLinkList)) {
+            $searchLinkResult = Link::whereIn('id', $addLinkList)->get();
+            foreach($searchLinkResult as $Link) {
+                $creatLinkList[] = [ 
+                        'title' => $Link->title, 
+                        'description' => $Link->description, 
+                        'url' => $Link->url, 
+                        'created_at' => date("Y-m-d H:i:s",time()),
+                        'updated_at' => date("Y-m-d H:i:s",time()),
+                        'getId' => $getIdByToken
+                        ];
+            }
+        }
         if(!empty($creatLinkList)) {
            
            Link::insert($creatLinkList);
@@ -232,18 +246,6 @@ class RepositoryController extends Controller
                     'repoid' => $repoId, 
                     'type' => 1, 
                     'itemid' => $Link,
-                    'created_at' => date("Y-m-d H:i:s",time()),
-                    'updated_at' => date("Y-m-d H:i:s",time())
-                    ];
-            }
-        }
-        if(!empty($addLinkList)) {
-            $searchLinkResult = Link::whereIn('id', $addLinkList)->get();
-            foreach($searchLinkResult as $Link) {
-                $repolistInsert[] = [
-                    'repoid' => $repoId, 
-                    'type' => 1, 
-                    'itemid' => $Link->id,
                     'created_at' => date("Y-m-d H:i:s",time()),
                     'updated_at' => date("Y-m-d H:i:s",time())
                     ];
@@ -273,12 +275,44 @@ class RepositoryController extends Controller
     
     public function deleteItems(Request $request, $repoId) {
          $this->validate($request, [
-            'tags'        => 'array|required',
-            'tags.*'      => 'string',
-            'name'        => 'string|required',
-            'description' => 'string|required',
-            'status'      => 'integer|required',
-            'token'       => 'string|required'
+            //'items.*.id'    => 'integer|required',
+            'token' => 'string|required',
+            'items' => 'array|required' 
+            //'type'  => 'integer|required'
         ]);
+        
+         $token = $request->input('token');
+         $delItems = $request->input('items');
+         $user = JWTAuth::authenticate($token);
+         $thisRepo = Repository::findOrFail($repoId);
+         if($thisRepo->creator != $user->id) {
+            return "wrong user not allowed";
+        }
+        $repoDelList = array();
+        $linkDelList = array();
+        foreach($delItems as $delItem) {
+            $v = Validator::make($delItem, [
+                'type' => 'integer|required|between:0,1',
+                'id'   => 'integer|required'
+            ]);
+            if ($v->fails()) {
+                return  "something wrong in type:".$addItem['type']." or id:".$addItem['id'];
+            }
+            
+            if($delItem['type'] == 0) {
+                $repoDelList[] = $delItem['id']; 
+            }
+            
+            if($delItem['type'] == 1) {
+                $linkDelList[] = $delItem['id'];
+            }
+        }
+        
+        Repolist::where('repoid', $repoId)->where('type', 0)->whereIn('itemid', $repoDelList)->delete();
+        Repolist::where('repoid', $repoId)->where('type', 1)->whereIn('itemid', $linkDelList)->delete();
+        Link::whereIn('id', $linkDelList)->delete();
+        TagLink::whereIn('linkid', $linkDelList)->delete();
+        
+        return "items delete success";
     }
 }

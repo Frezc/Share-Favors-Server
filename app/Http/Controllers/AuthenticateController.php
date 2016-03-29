@@ -111,31 +111,42 @@ class AuthenticateController extends Controller
         $starListMax = $request->input('starListMax', 3);
         $repositoriesMax = $request->input('repositoriesMax', 3);
         
-        $user = User::findOrFail($id);
+        try {
+            $user = User::findOrFail($id);
+        } catch(\Exception $e) {
+            return response()->json(['error' => 'no such user'], 400);
+        }
         $userinfo = [
             'sign'     => $user->sign, 
             'email'    => $user->email, 
-            'nickname' => $user->nickname
+            'nickname' => $user->nickname,
+            'id'       => $user->id
             ];
         $userinfo['repositories'] = array();
-        $userinfo['starlist'] = array();
-        $starlist = $user->stars()->where('status', 1)->orderBy('updated_at', 'DESC')->take($starListMax)->get();
-        foreach($starlist as $star) {
+        //$userinfo['starlist'] = array();
+        $starlist = $user->starlist()->where('status', 1)->orderBy('updated_at', 'DESC')->take($starListMax)->get();
+        // dd(1);
+        searchCreatorFromObject($starlist);
+        // foreach($starlist as $star) {
             //循环查表设置名字，待优化
-            setCreator($star);
-            $star->tags;
-            $userinfo['starlist'][] = $star->toArray();
-        }
+        //     setCreator($star);
+        addTagsToRepo($starlist);
+           // $star->tags;
+        $userinfo['starlist'] = $starlist->toArray();
+        //}
+       
         $repolist = Repository::where('creator', $id)
                                                   ->where('status', 1)
                                                   ->orderBy('updated_at', 'DESC')
                                                   ->take($repositoriesMax)
                                                   ->get();
-        foreach($repolist as $repo) {
-            setCreatorName($repo, $user->nickname);
-            $repo->tags;
-            $userinfo['repositories'][] = $repo->toArray();
-        }
+        searchCreatorFromObject($repolist);
+        addTagsToRepo($repolist);
+        //foreach($repolist as $repo) {
+         //   setCreatorName($repo, $user->nickname);
+         //   $repo->tags;
+        $userinfo['repositories'] = $repolist;
+        //}
         
         return response()->json($userinfo);
     }

@@ -82,7 +82,11 @@ class RepositoryController extends Controller
         
         $token = $request->input('token');
         $user = JWTAuth::authenticate($token);
-        $thisRepo = Repository::firstOrFail();
+        try{ 
+            $thisRepo = Repository::firstOrFail($id);
+        } catch(\Exceptions $e) {
+            return response()->json(['error' => 'please input right repoid'], 400);
+        }
         if($thisRepo->creator != $user->id) {
             return response()->json(['error' => 'wrong user'], 403);
         }
@@ -376,25 +380,45 @@ class RepositoryController extends Controller
             'tags' => 'array|required' ,
             'tags.*' => 'string|required'
         ]);
+        $token = $request->input('token');
+        $user = JWTAuth::authenticate($token);
+        try{ 
+            $thisRepo = Repository::firstOrFail($repoId);
+        } catch(\Exceptions $e) {
+            return response()->json(['error' => 'please input right repoid'], 400);
+        }
+       
+        if($thisRepo->creator != $user->id) {
+            return response()->json(['error' => 'wrong user'], 403);
+        }
         
-        if( !empty($request->tags) ) {
-            foreach($tags = $request->input('tags') as $tag) {
-                $searchTagsByText[] = str_replace(' ', '',$tag);
-            }
-            $haveTags = Tag::whereIn('text', $searchTagsByText)->get();
-            $creatTags = array_diff($searchTagsByText, $haveTags);
-            $tagInsert = array();
-            foreach($creatTags as $creatTag) {
-                $tagInsert[] = [
-                    'text' => $creatTag,
-                    'used' => 0,
-                    'created_at' => date("Y-m-d H:i:s",time()),
-                    'updated_at' => date("Y-m-d H:i:s",time())
-                ];
-            }
-            Tag::insert( $tagInsert );
-            $tagsDetail = Tag::whereIn('text', $searchTagsByText)->increment('used')->get();
-        } 
+        foreach($tags = $request->input('tags') as $tag) {
+            $searchTagsByText[] = str_replace(' ', '',$tag);
+        }
+        $haveTags = Tag::whereIn('text', $searchTagsByText)->get();
+        $creatTags = array_diff($searchTagsByText, $haveTags);
+        $tagInsert = array();
+        foreach($creatTags as $creatTag) {
+            $tagInsert[] = [
+                'text' => $creatTag,
+                'used' => 0,
+                'created_at' => date("Y-m-d H:i:s",time()),
+                'updated_at' => date("Y-m-d H:i:s",time())
+            ];
+        }
+        Tag::insert( $tagInsert );
+        $tagsDetail = Tag::whereIn('text', $searchTagsByText)->increment('used')->get();
+        $tagRepoList = array();
+        foreach ($tagsDetail as $tag) {
+            $tagRepoList[] = [
+                'repoid' => $repoId, 
+                'tagid' => $tag->id, 
+                'created_at' => date("Y-m-d H:i:s",time()),
+                'updated_at' => date("Y-m-d H:i:s",time())
+            ];
+        }
+        TagRepo::insert( $tagRepoList );
+        return response()->json($tagsDetail);
     }
     
     public function delTags(Request $request, $repoId) {

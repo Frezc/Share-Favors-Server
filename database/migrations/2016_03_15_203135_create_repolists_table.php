@@ -14,7 +14,7 @@ class CreateRepolistsTable extends Migration
     {
         Schema::create('repolists', function (Blueprint $table) {
             $table->integer('repoid')->unsigned();
-            $table->tinyInteger('type');//1为links，2为repositaries
+            $table->tinyInteger('type')->unsigned();//1为links，2为repositaries
             $table->integer('itemid');
             $table->timestamps();
             

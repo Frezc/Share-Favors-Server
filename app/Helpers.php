@@ -3,6 +3,7 @@ use App\User;
 use App\TagRepo;
 use App\TagLink;
 use App\Tag;
+use App\RecentItem;
 function setCreator($item) {
     $item->creatorId = $item->creator;
     unset($item->creator);
@@ -69,6 +70,7 @@ function deMul($item) {
     return $return;
 }
 //仓库批量加tag
+//输入对象
 function addTagsToRepo($itemList) {
     $itemsId = array();
     foreach($itemList as $item) {
@@ -97,6 +99,7 @@ function addTagsToRepo($itemList) {
     }
 }
 //link批量加tag
+//输入对象
 function addTagsToLink($itemList) {
     $itemsId = array();
     foreach($itemList as $item) {
@@ -119,4 +122,42 @@ function addTagsToLink($itemList) {
     foreach($itemList as $item) {
         $item['tags'] = isset($TagLinkById[$item->id]) ? $TagLinkById[$item->id] :null ;
     } 
+}
+
+
+//输入对象
+//重构集合为item
+function addTagsToItems($itemList) {
+    $itemsId = array();
+    foreach($itemList as $item) {
+        $itemsId[] = $item->id;
+    }
+    $tagItems = TagItem::whereIn('id', deMul($itemsId))->get();
+    $tagsId = array();
+    foreach($tagItems as $tagItem) {
+        $tagsId[] = $tagItem->tagid;
+    }
+    $tags = Tag::whereIn('id', deMul($tagsId))->get();
+    $GetTag = array();
+    foreach($tags as $tag) {
+        $GetTag[$tag->id] = $tag->toArray();
+    }
+    $TagItemById = array();
+    foreach($tagItems as $tagItem) {
+        $TagItemById[$tagItem->itemid][] = $GetTag[$tagItem->tagid];
+    }
+    foreach($itemList as $item) {
+        $item['tags'] = isset($TagItemById[$item->id]) ? $TagItemById[$item->id] :null ;
+    } 
+}
+
+function getRecentItems($itemList) {
+    $itemsId = array();
+    foreach($itemList as $item) {
+        $itemsId[] = $item->id;
+    }
+    $recentItemsList = RecentItem::whereIn('repoid', deMul($itemsId))->orderBy('created_at', 'DESC')->get();
+    foreach($recentItemsList as $recentItems) {
+        
+    }
 }

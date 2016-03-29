@@ -17,6 +17,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('testEmail', function () {
+	return view('emails.reminder', ['email' => '504021398@qq.com', 'code' => 'FFefFf']);
+});
+
 Route::get('test', function () {
     return 'ok';
 });

@@ -62,3 +62,6 @@ Route::delete('repository/{id}', 'RepositoryController@destroy');
 Route::delete('repository/{repoId}/list', 'RepositoryController@deleteItems');
 Route::post('repository/{repoId}/list','RepositoryController@addItems');
 Route::put('repository/{repoId}/list', 'RepositoryController@updateItems');
+
+Route::post('repository/{repoId}/tag', 'RepositoryController@addTags');
+Route::delete('repository/{repoId}/tag', 'RepositoryController@delTags');

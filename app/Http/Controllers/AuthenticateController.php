@@ -14,7 +14,7 @@ use App\Repolist;
 use App\Link;
 use App\TagRepo;
 use App\TagLink;
-
+use App\Exceptions;
 use Hash;
 
 class AuthenticateController extends Controller
@@ -36,7 +36,11 @@ class AuthenticateController extends Controller
             return response()->json(['error' => 'could_not_create_token'], 500);
         }
         //dd(1);
-        $user = User::where('email', $credentials['email'])->firstOrFail();
+        try {
+            $user = User::where('email', $credentials['email'])->firstOrFail();
+        } catch (\Exceptions $e) {
+            return response()->json(['error' => 'no this user or wrong email'], 400);
+        }
         //$starlist = array();
         //$starlist = [];
         //$starlist = ["nickname" => $user->nickname, "email" => $user->email];

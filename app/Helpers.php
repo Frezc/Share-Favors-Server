@@ -4,6 +4,8 @@ use App\TagRepo;
 use App\TagLink;
 use App\Tag;
 use App\RecentItem;
+use App\TagItem;
+use App\Item;
 function setCreator($item) {
     $item->creatorId = $item->creator;
     unset($item->creator);
@@ -132,7 +134,7 @@ function addTagsToItems($itemList) {
     foreach($itemList as $item) {
         $itemsId[] = $item->id;
     }
-    $tagItems = TagItem::whereIn('id', deMul($itemsId))->get();
+    $tagItems = TagItem::whereIn('itemid', deMul($itemsId))->get();
     $tagsId = array();
     foreach($tagItems as $tagItem) {
         $tagsId[] = $tagItem->tagid;
@@ -151,13 +153,52 @@ function addTagsToItems($itemList) {
     } 
 }
 
-function getRecentItems($itemList) {
+//传入仓库列表object 返回recentItems
+function getRecentItems($itemList, $showAll) {
     $itemsId = array();
     foreach($itemList as $item) {
         $itemsId[] = $item->id;
     }
-    $recentItemsList = RecentItem::whereIn('repoid', deMul($itemsId))->orderBy('created_at', 'DESC')->get();
-    foreach($recentItemsList as $recentItems) {
-        
+    //显示部分
+    if($showAll == 0) {
+    $recentItemsList = Item::whereIn('repo_id', deMul($itemsId))->where('status', 1)->orderBy('updated_at', 'DESC')->take(10)->get();
     }
+    //显示全部
+    if($showAll == 1) {
+    $recentItemsList = Item::whereIn('repo_id', deMul($itemsId))->orderBy('updated_at', 'DESC')->take(10)->get();   
+    }
+    addTagsToItems($recentItemsList);
+    $getRecentRepos = array();
+    $getRecentItems = array();
+    foreach($recentItemsList as $recentItems) {
+        $thisId = $recentItems->repo_id;
+        if($recentItems->type == 0) {
+            unset($recentItems->url);
+            unset($recentItems->type);
+            unset($recentItems->repo_id);
+            $getRecentItems[ $thisId ][] = ['repository' => $recentItems, 'type' => 0 ];
+        }
+        if($recentItems->type ==1 ) {
+            unset($recentItems->repo_id, 
+                   $recentItems->type, 
+                   $recentItems->creator_id,
+                   $recentItems->creator_name,
+                   $recentItems->status,
+                   $recentItems->link_num,
+                   $recentItems->repo_num
+                   );
+            //unset($recentItems->type);
+            //unset($recentItems->)
+            $getRecentItems[ $thisId ][] = ['links' => $recentItems, 'type' => 1];
+        }
+    }
+    $setRecentItemsById = array();
+    $return = array();
+    foreach($itemList as $item) {
+        $return[] = [ 
+            'repository' => $item,
+            'recentItems' => isset($getRecentItems[ $item->id ])?$getRecentItems[ $item->id] : [], 
+            ];
+    }
+    return $return;
 }

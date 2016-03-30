@@ -24,6 +24,8 @@ class CreateItemsTable extends Migration
             $table->text('description')->nullable();
             $table->integer('star')->unsigned()->default(0);
             $table->tinyInteger('status')->unsigned()->default(1);//1为公开 0为隐藏
+            $table->integer('repo_num')->unsigned()->default(0);
+            $table->integer('link_num')->unsigned()->default(0);
             $table->softDeletes();
             $table->timestamps();
             $table->index('repo_id');

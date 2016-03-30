@@ -15,6 +15,7 @@ use App\Link;
 use App\TagRepo;
 use App\TagLink;
 use App\Exceptions;
+use App\Item;
 use Hash;
 
 class AuthenticateController extends Controller
@@ -45,8 +46,17 @@ class AuthenticateController extends Controller
         //$starlist = [];
         //$starlist = ["nickname" => $user->nickname, "email" => $user->email];
         $user->starlist;
-        searchCreatorFromObject($user['starlist']);
-        addTagsToRepo($user['starlist']);
+        //$user['starlist']
+        addTagsToItems($user['starlist']);
+        //getRecentItems($user['starlist']);
+        //dd($user);
+        //addTagsToItems($user['starlist']);
+        $repoList = Item::where('creator_id', $user->id)->where('type', 0)->orderBy('updated_at')->get();
+        foreach($repoList as $repo) {
+            unset($repo->url);
+        }
+        addTagsToItems($repoList);
+        //getRecentItems($repoList);
         // foreach( $user->starlist as $repodetail){
         //     循环查表设置名字，待优化
         //     setCreator($repodetail);
@@ -55,7 +65,15 @@ class AuthenticateController extends Controller
         // }
         //if($starlist == null)
         //$userdetail = ["sign" => $user->sign, "starlist" =>$starlist, "nickname" => $user->nickname, "email" => $user->email];
-        $package = ["token" => $token, "expired_at" => time()+86400, "user" => $user];
+        $package = [
+            "token" => $token, 
+            "expired_at" => time()+86400, 
+            "user" => ['starlist' => getRecentItems($user['starlist'], 0),
+                        'nickname' => $user->nickname, 
+                        'email' => $user->email 
+                      ],
+            "repostories" => getRecentItems($repoList, 0)
+            ];
         //dd(1);
         return response()->json($package);
     }
@@ -126,26 +144,26 @@ class AuthenticateController extends Controller
         //$userinfo['starlist'] = array();
         $starlist = $user->starlist()->where('status', 1)->orderBy('updated_at', 'DESC')->take($starListMax)->get();
         // dd(1);
-        searchCreatorFromObject($starlist);
+        //searchCreatorFromObject($starlist);
         // foreach($starlist as $star) {
             //循环查表设置名字，待优化
         //     setCreator($star);
-        addTagsToRepo($starlist);
+        addTagsToItems($starlist);
            // $star->tags;
         $userinfo['starlist'] = $starlist->toArray();
         //}
        
-        $repolist = Repository::where('creator', $id)
-                                                  ->where('status', 1)
-                                                  ->orderBy('updated_at', 'DESC')
-                                                  ->take($repositoriesMax)
-                                                  ->get();
-        searchCreatorFromObject($repolist);
-        addTagsToRepo($repolist);
+        $repolist = Item::where('creator_id', $id)
+                        ->where('status', 1)
+                        ->orderBy('updated_at', 'DESC')
+                        ->take($repositoriesMax)
+                        ->get();
+        //searchCreatorFromObject($repolist);
+        addTagsToItems($repolist);
         //foreach($repolist as $repo) {
          //   setCreatorName($repo, $user->nickname);
          //   $repo->tags;
-        $userinfo['repositories'] = $repolist;
+        $userinfo['repositories'] = getRecentItems($repolist, 0);
         //}
         
         return response()->json($userinfo);
@@ -165,14 +183,14 @@ class AuthenticateController extends Controller
         if(!empty($token)) {
             $user = JWTAuth::authenticate($token);
              if($user->id == $userId) {
-                $repoList = Repository::where('creator', $userId)
+                $repoList = Item::where('creator_id', $userId)
                                     ->orderBy('updated_at', 'DESC')
                                     ->take($limit)
                                     ->get();
                 $response = ['showAll' => 1];
              }
              else{
-                $repoList = Repository::where('creator', $userId)->where('status', 1)
+                $repoList = Item::where('creator_id', $userId)->where('status', 1)
                                   ->orderBy('updated_at', 'DESC')
                                   ->take($limit)->get();
                 $response = ['showAll' => 0];
@@ -180,7 +198,7 @@ class AuthenticateController extends Controller
              }
         }
         else{
-             $repoList = Repository::where('creator', $userId)->where('status', 1)
+             $repoList = Item::where('creator_id', $userId)->where('status', 1)
                                   ->orderBy('updated_at', 'DESC')
                                   ->take($limit)->get();
              $response = ['showAll' => 0];
@@ -188,7 +206,7 @@ class AuthenticateController extends Controller
         }
        
         $response['repolist'] = array();
-        $response['repoNumAll'] = Repository::where('creator', $userId)->count();
+        $response['repoNumAll'] = Item::where('creator_id', $userId)->count();
         $count = 0;
         //$repodetail = array();
         foreach($repoList as $repo) {
@@ -196,9 +214,9 @@ class AuthenticateController extends Controller
              $count = $count+1;
         }
         
-        $recentItemList = Repolist::whereIn('repoid', $repoIdList)
+        $recentItemList = Item::whereIn('repo_id', $repoIdList)
                                   ->orderBy('updated_at', 'DESC')->get();
-        
+        //施工到了这里！！！！！！
         //$repodetail = array();
         $searchRepo = array();
         $searchLink = array();

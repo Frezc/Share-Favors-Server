@@ -61,6 +61,7 @@ Route::group(['middleware' => 'throttle:2'], function () {
 Route::post('repository', 'RepositoryController@create');
 Route::get('repository/{id}', 'RepositoryController@show');
 Route::delete('repository/{id}', 'RepositoryController@destroy');
+Route::put('repository/{id}', 'RepositoryController@update');
 // Route::resource('repository', 'RepositoryController', ['except' => [
 //      'edit'
 // ]]);

@@ -226,20 +226,20 @@ function formatObject($items) {
 
 function formatAnObject($item) {
     if($item->type == 0) {
-            unset($item->url);
-            unset($item->type);
-            unset($item->repo_id);
-        }
-        if($item->type == 1) {
-           unset(
-            $item->repo_id, 
-            $item->type, 
-            $item->creator_id,
-            $item->creator_name,
-            $item->status,
-            $item->link_num,
-            $item->repo_num
-            ); 
-        }
-    
+        unset($item->url);
+        unset($item->type);
+        unset($item->repo_id);
+    }
+    if($item->type == 1) {
+        unset(
+        $item->repo_id, 
+        $item->type, 
+        $item->creator_id,
+        $item->creator_name,
+        $item->status,
+        $item->link_num,
+        $item->repo_num
+        ); 
+    }
+
 }

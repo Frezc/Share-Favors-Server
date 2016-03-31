@@ -180,7 +180,7 @@ class AuthenticateController extends Controller
                             ->where('status', 1)
                             ->where('type', 0)
                             ->orderBy('updated_at', 'DESC')
-                            ->skip($offset)s
+                            ->skip($offset)
                             ->take($limit)->get();
             $response = ['showAll' => 0];
             try{

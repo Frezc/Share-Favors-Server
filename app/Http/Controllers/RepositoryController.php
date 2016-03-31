@@ -10,6 +10,9 @@ use App\Link;
 use App\Repolist;
 use App\TagRepo;
 use App\TagLink;
+use App\Item;
+use App\TagItem;
+
 use JWTAuth;
 
 class RepositoryController extends Controller
@@ -29,7 +32,11 @@ class RepositoryController extends Controller
         $offset   = $request->input('offset', 0);
         $showlist = $request->input('showList', true);
         $token    = $request->input('token');
-        $oneRepo = Repository::findOrFail($id);
+        try{
+            $oneRepo = Item::findOrFail($id);
+        } catch(\Exception $e) {
+            return response()->json(['error' => 'no this repository'], 400);
+        }
         if(!$oneRepo->status){
             if (!$token) {
                 return response()->json(['error' => 'This repository is invisible'], 403);
@@ -39,33 +46,41 @@ class RepositoryController extends Controller
                 return response()->json(['error' => 'This repository is invisible'], 403);
             }
         }
+        //dd($oneRepo);
+        formatAnObject($oneRepo);
         $result = array();
-        $result['repository'] = $oneRepo->toArray();
-        $result['repository']['tags'] = array();
-        $result['list'] = array();
-        foreach ($oneRepo->tags as $tag) {
-            $result['repository']['tags'][] = $tag->toArray();
-        }
+        $oneRepo->tags;
+        $result['repository'] = $oneRepo;
+        $result['items'] = array();
         if($showlist) {
-            $itemlist = Repolist::where('repoid', $id)->orderBy('updated_at', 'DESC')->take($limit)->get();
-            foreach ($itemlist as $item) {
-                //仓库为0 link是1
+            $itemlist = Item::where('repo_id', $id)->orderBy('updated_at', 'DESC')->skip($offset)->take($limit)->get();
+            foreach($itemlist as $item) {
                 if($item->type == 0) {
-                    $itemdetail = Repository::findOrFail($item->itemid);
-                    if(!$itemdetail->status){
-                        continue;
-                    }
-                    setCreator($itemdetail);
-                    $itemdetail->tags;
-                    $result['list'][]=['type' => 0, 'repository' => $itemdetail];
+                    unset($item->url);
+                    unset($item->type);
+                    unset($item->repo_id);
+                    $item->link_num = 0;
+                    $item->repo_num = 0;
+                    $result['items'][] = ['repository' => $item, 'type' => 0];
                 }
-                else{
-                     $itemdetail = Link::findOrFail($item->itemid);
-                     $itemdetail->tags;
-                     $result['list'][]=['type' => 1, 'link' => $itemdetail];
+                if($item->type ==1) {
+                
+                unset(
+                    $item->repo_id, 
+                    $item->type, 
+                    $item->creator_id,
+                    $item->creator_name,
+                    $item->status,
+                    $item->link_num,
+                    $item->repo_num
+                ); 
+                $result['items'][] = ['link' => $item, 'type' => 1]; 
                 }
             }
+            $result['items'] = $itemlist;
         }
+        $result['maxlen'] = Item::where('repo_id', $id)->count();
+        $result['len'] = count(isset($itemlist) ? $itemlist :[] );
         return response()->json($result);
     }
 

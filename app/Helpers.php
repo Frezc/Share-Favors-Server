@@ -153,7 +153,7 @@ function addTagsToItems($itemList) {
     } 
 }
 
-//传入仓库列表object 返回recentItems
+//传入仓库列表object 返回[recentItems, items]
 function getRecentItems($itemList, $showAll) {
     $itemsId = array();
     foreach($itemList as $item) {
@@ -201,4 +201,45 @@ function getRecentItems($itemList, $showAll) {
             ];
     }
     return $return;
+}
+
+function formatObject($items) {
+    foreach($items as $item) {
+        if($item->type == 0) {
+            unset($item->url);
+            unset($item->type);
+            unset($item->repo_id);
+        }
+        if($item->type == 1) {
+           unset(
+            $item->repo_id, 
+            $item->type, 
+            $item->creator_id,
+            $item->creator_name,
+            $item->status,
+            $item->link_num,
+            $item->repo_num
+            ); 
+        }
+    }
+}
+
+function formatAnObject($item) {
+    if($item->type == 0) {
+            unset($item->url);
+            unset($item->type);
+            unset($item->repo_id);
+        }
+        if($item->type == 1) {
+           unset(
+            $item->repo_id, 
+            $item->type, 
+            $item->creator_id,
+            $item->creator_name,
+            $item->status,
+            $item->link_num,
+            $item->repo_num
+            ); 
+        }
+    
 }

@@ -14,15 +14,16 @@ class CreateRepositoriesTable extends Migration
     {
         Schema::create('repositories', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('name', 100);
-            $table->integer('creator')->unsigned();
+            $table->string('title', 100);
+            $table->integer('creator_id')->unsigned();
+            $table->string('creator_name', 16);
             $table->tinyInteger('status')->default(1); //1 for public, 0 for private
             $table->integer('stars')->unsigned()->default(0);
             $table->text('description')->nullable();
             $table->timestamps();
             $table->softDeletes();
             
-            $table->index(['name', 'creator']);
+            $table->index(['title', 'creator_id']);
         });
     }
 

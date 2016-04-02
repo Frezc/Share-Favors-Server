@@ -14,9 +14,9 @@ class CreateStarsTable extends Migration
     {
          Schema::create('starlists', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('userid')->unsigned();
-            $table->integer('repoid')->unsigned();
-            $table->unique(['userid', 'repoid'], 'user_star');
+            $table->integer('user_id')->unsigned();
+            $table->integer('repo_id')->unsigned();
+            $table->unique(['user_id', 'repo_id'], 'user_star');
             $table->timestamps();
         });
     }

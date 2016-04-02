@@ -8,9 +8,8 @@ class Link extends Model
 {
     protected $hidden = ['getId'];
     
-    public function  tags() {
-        return $this->belongsToMany('App\Tag', 'taglink', 'linkid', 'tagid');
+    public function tags() {
+        return $this->morphToMany('App\Tag', 'tagitems');
     }
-    
     
 }

@@ -13,12 +13,13 @@ class CreateRepolistsTable extends Migration
     public function up()
     {
         Schema::create('repolists', function (Blueprint $table) {
-            $table->integer('repoid')->unsigned();
+            $table->integer('repo_id')->unsigned();
             $table->tinyInteger('type');//1为links，2为repositaries
-            $table->integer('itemid');
+            $table->integer('item_id');
+            $table->tinyInteger('status')->default(1); //1 for public, 0 for private
             $table->timestamps();
             
-            $table->index('repoid');
+            $table->index('repo_id');
         });
     }
 

@@ -41,22 +41,23 @@ class AuthenticateController extends Controller
         } catch (\Exceptions $e) {
             return response()->json(['error' => 'no this user or wrong email'], 400);
         }
-        //$starlist = array();
-        //$starlist = [];
-        //$starlist = ["nickname" => $user->nickname, "email" => $user->email];
-        $user->starlist;
-        searchCreatorFromObject($user->starlist);
+        //$user->starlist;
+        //dd($user->toArray());
         addTagsToRepo($user->starlist);
-        // foreach( $user->starlist as $repodetail){
-        //     循环查表设置名字，待优化
-        //     setCreator($repodetail);
-        //     $repodetail->tags;            
-        //     $starlist[] = $repodetail->toArray();
-        // }
-        //if($starlist == null)
-        //$userdetail = ["sign" => $user->sign, "starlist" =>$starlist, "nickname" => $user->nickname, "email" => $user->email];
-        $package = ["token" => $token, "expired_at" => time()+86400, "user" => $user];
-        //dd(1);
+        //dd($user->starlist);
+        //$user['starlist'] = getRecentItems($user->starlist, 1, 10);
+        
+        //$user->repositories;
+        addTagsToRepo($user->repositories);
+        //$user['repositories'] = getRecentItems($user->repositories, 1, 10);
+        $package = [
+                    "token" => $token, 
+                    "expired_at" => time()+86400, 
+                    "user" => [
+                                'starlist' => getRecentItems($user->starlist, 1, 10),
+                                'repositories' => getRecentItems($user->repositories, 1, 10)
+                              ]
+                    ];
         return response()->json($package);
     }
     
@@ -98,7 +99,6 @@ class AuthenticateController extends Controller
         $user->save();
         
         EmailVerification::where('email',$email)->delete();
-        //dd(1);
         return $this->auth($request);
     }
     

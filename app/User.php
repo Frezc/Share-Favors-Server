@@ -26,6 +26,10 @@ class User extends Authenticatable
     ];
     
     public function starlist() {
-        return $this->belongsToMany('App\Repository', 'starlists', 'userid', 'repoid');
+        return $this->belongsToMany('App\Repository', 'starlists', 'user_id', 'repo_id');
+    }
+    
+    public function repositories() {
+        return $this->hasMany('App\Repository', 'creator_id', 'id');
     }
 }

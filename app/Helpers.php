@@ -130,6 +130,9 @@ function addTagsToLink($itemList) {
 //输入对象
 //重构集合为item
 function addTagsToItems($itemList) {
+    if(empty($itemList)) {
+        return  [];
+    }
     $itemsId = array();
     foreach($itemList as $item) {
         $itemsId[] = $item->id;

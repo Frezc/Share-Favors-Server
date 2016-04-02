@@ -43,7 +43,8 @@ class AuthenticateController extends Controller
             return response()->json(['error' => 'no this user or wrong email'], 400);
         }
         $user->starlist;
-        if(isset($user['starlist'])) {
+        //dd($user->toArray()['starlist']);
+        if(isset($user->toArray()['starlist'])) {
             addTagsToItems($user->starlist);
         }
         $repoList = Item::where('creator_id', $user->id)->where('type', 0)->orderBy('updated_at')->get();

@@ -45,8 +45,8 @@ class AuthenticateController extends Controller
         //$starlist = [];
         //$starlist = ["nickname" => $user->nickname, "email" => $user->email];
         $user->starlist;
-        searchCreatorFromObject($user['starlist']);
-        addTagsToRepo($user['starlist']);
+        searchCreatorFromObject($user->starlist);
+        addTagsToRepo($user->starlist);
         // foreach( $user->starlist as $repodetail){
         //     循环查表设置名字，待优化
         //     setCreator($repodetail);

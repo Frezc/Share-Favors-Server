@@ -51,10 +51,11 @@ class AuthenticateController extends Controller
             unset($repo->url);
         }
         addTagsToItems($repoList);
+        //dd(1);
         $package = [
             "token" => $token, 
             "expired_at" => time()+86400, 
-            "user" => ['starlist' => getRecentItems($user['starlist'], 0),
+            "user" => ['starlist' => getRecentItems($user->starlist, 0),
                         'nickname' => $user->nickname, 
                         'email' => $user->email 
                       ],

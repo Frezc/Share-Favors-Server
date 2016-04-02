@@ -156,7 +156,7 @@ function addTagsToItems($itemList) {
 //传入仓库列表object 返回[recentItems, items]
 function getRecentItems($itemList, $showAll) {
     if(empty($itemList)) {
-        return $itemList = [];
+        return  [];
     }
     $itemsId = array();
     foreach($itemList as $item) {

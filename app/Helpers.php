@@ -125,7 +125,7 @@ function addTagsToLink($itemList) {
     } 
 }
 
-//传入object , showall 1为显示全部 2为权限不足隐藏隐藏仓库
+//传入object , showall 1为显示全部 0为权限不足隐藏隐藏仓库
 function getRecentItems($repoList, $showAll, $limit) {
     if( empty($repoList->toArray() ) ) {
         return [];
@@ -147,7 +147,7 @@ function getRecentItems($repoList, $showAll, $limit) {
                                  ->orderBy('updated_at', 'DESC')
                                  ->get();    
     }
-    //1为links，2为repositaries
+    //1为links，0为repositaries
     $getItemById = array();
     $searchRepo = array();
     $searchLink = array();
@@ -156,8 +156,8 @@ function getRecentItems($repoList, $showAll, $limit) {
             $getItemById[1][$recentItem->item_id][] = $recentItem->repo_id;
             $searchLink[] = $recentItem->item_id;
         }
-        if($recentItem->type == 2) {
-            $getItemById[2][$recentItem->item_id][] = $recentItem->repo_id;
+        if($recentItem->type == 0) {
+            $getItemById[0][$recentItem->item_id][] = $recentItem->repo_id;
             $searchRepo[] = $recentItem->item_id;
         } 
     }
@@ -167,8 +167,8 @@ function getRecentItems($repoList, $showAll, $limit) {
                         ->get();
         addTagsToLink($recentLinks);
         foreach($recentLinks as $recentLink) {
-        $getRecentById[1][$recentLink->id][] = $recentLink;
-    }
+            $getRecentById[1][$recentLink->id][] = $recentLink;
+        }
     }
     if(!empty($searchRepo)) {
         $recentRepos = Repository::whereIn('id', $searchRepo)
@@ -176,7 +176,7 @@ function getRecentItems($repoList, $showAll, $limit) {
                             ->get();
         addTagsToRepo($recentRepos);
         foreach($recentRepos as $Repo) {
-            $getRecentById[2][$Repo->id] = $Repo;
+            $getRecentById[0][$Repo->id] = $Repo;
         }
     }  
     $setRepoById = array();   
@@ -191,7 +191,7 @@ function getRecentItems($repoList, $showAll, $limit) {
                                                 'type' => $recentItem->type
                                                 ];
         }
-        if($recentItem->type == 2) {
+        if($recentItem->type == 0) {
             $setRepoById[$recentItem->repo_id][] = [
                                                 'repository' => $getRecentById[$recentItem->type][$recentItem->item_id], 
                                                 'type' => $recentItem->type

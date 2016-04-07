@@ -15,6 +15,7 @@ class CreateLinksTable extends Migration
         Schema::create('links', function (Blueprint $table) {
             $table->increments('id');
             $table->string('title', 100);
+            $table->integer('repo_id')->unsigned();
             $table->text('description')->nullable();
             $table->string('url');
             $table->timestamps();

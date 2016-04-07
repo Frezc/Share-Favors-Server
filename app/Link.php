@@ -12,4 +12,8 @@ class Link extends Model
         return $this->morphToMany('App\Tag','tagitem', 'tagitems', 'tag_id', 'item_id');
     }
     
+    public function repository() {
+        return $this->belongsTo('App\Repository', 'repo_id', 'id');
+    }
+    
 }

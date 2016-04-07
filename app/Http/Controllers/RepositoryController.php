@@ -49,6 +49,8 @@ class RepositoryController extends Controller
         $result['items'] = array();
         $searchRepo = array();
         $searchLink = array();
+        
+        $maxLen = Repolist::where('repo_id', $id)->count();
         if($showlist) {
             $itemlist = Repolist::where('repo_id', $id)
                                 ->orderBy('updated_at', 'DESC')
@@ -56,14 +58,14 @@ class RepositoryController extends Controller
                                 ->take($limit)
                                 ->get();
             foreach ($itemlist as $item) {
-                //1为links，2为repositaries
-                if($item->type == 2) {
+                //1为links，0为repositaries
+                if($item->type == 0) {
                     if(!$item->status && $user->id != $oneRepo->creator_id) {
                         continue;
                     }
                     $searchRepo[] = $item->item_id;
                 }
-                if($item->type ==1) {
+                if($item->type == 1) {
                     if(!$item->status && $user->id != $oneRepo->creator_id) {
                         continue;
                     }
@@ -81,10 +83,12 @@ class RepositoryController extends Controller
                 $item_Repo = Repository::where('id', $searchRepo)->orderBy('updated_at', 'DESC')->get();
                 addTagsToRepo($item_Repo);
                 foreach( $item_Repo as $repo) {
-                    $result['items'][] = ['repository' => $repo, 'type' => 2];
+                    $result['items'][] = ['repository' => $repo, 'type' => 0];
                 }
             }
         }
+        $result['maxlen'] = $maxLen;
+        $result['len'] = count($searchRepo) + count($searchLink);
         return response()->json($result);
     }
 
@@ -101,37 +105,32 @@ class RepositoryController extends Controller
         
         $token = $request->input('token');
         $user = JWTAuth::authenticate($token);
-        $thisRepo = Repository::firstOrFail();
+        try{ 
+            $thisRepo = Repository::findOrFail($id);
+        } catch(\Exceptions $e) {
+            return response()->json(['error' => 'repository not found'], 404);
+        }    
         if($thisRepo->creator != $user->id) {
             return response()->json(['error' => 'wrong user'], 403);
         }
-        $searchTagsByText = array();
         if( empty($request->tags) && 
             empty($request->status) && 
             empty($request->description) && 
             empty($request->name) ) {
                 return response()->json(['error' => 'nothing was input,please check your input'], 400);
             }
-        // if( !empty($request->tags) ) {
-        //     foreach($tags = $request->input('tags') as $tag) {
-        //         $searchTagsByText[] = str_replace(' ', '',$tag);
-        //     }
-        //     $haveTags = Tag::whereIn('text', $searchTagsByText)->get();
-        //     $creatTags = array_diff($searchTagsByText, $haveTags);
-        //     $tagInsert = array();
-        //     foreach($creatTags as $creatTag)　{
-        //         $tagInsert[] = [
-        //             'text' => $creatTag,
-        //             'used' => 1,
-        //             'created_at' => date("Y-m-d H:i:s",time()),
-        //             'updated_at' => date("Y-m-d H:i:s",time())
-        //         ]
-        //     }
-        //     Tag::insert( $tagInsert );
-        //     $tagsDetail = Tag::whereIn('text', $searchTagsByText)->get();
-        // } 
-        
-        
+        if( !empty($request->status) ) {
+            $thisRepo->status = $request->status;
+        }
+        if( !empty($request->description) ) {
+            $thisRepo->description = $request->description;
+        }
+        if( !empty($request->title) ) {
+            $thisRepo->title = $request->title;
+        }
+        $thisRepo->save();
+        $thisRepo->tags;
+        return response()->json($thisRepo);
     }
 
     public function destroy(Request $request, $id) {
@@ -140,25 +139,26 @@ class RepositoryController extends Controller
             'token' => 'string|required',
             'repoName' => 'string|required' 
         ]);
-        //dd($request);
         $token = $request->input('token');
         $user = JWTAuth::authenticate($token);
-        $thisRepo = Repository::where('id', $id)->where('name', $request->repoName)->firstOrFail();
-        if($thisRepo->creator != $user->id) {
-            return response()->json(['error' => 'wrong user']);
+        try{
+            $thisRepo = Repository::where('id', $id)->where('name', $request->repoName)->firstOrFail();
+        } catch(\Exceptions $e) {
+            return response()->json(['error' => 'repository not found'], 404);
         }
-        //TagRepo::where('repoid', $id)->delete();
-        //Repolist::where('repoid', $id)->delete();
+        if($thisRepo->creator != $user->id) {
+            return response()->json(['error' => 'wrong user'], 403);
+        }
         $thisRepo->delete();
         
-        return "success";
+        return response()->json(['delete success']);
     }
     
     public function create(Request $request) {
         $this->validate($request, [
             'tags'        => 'array|required',
             'tags.*'      => 'string',
-            'name'        => 'string|required',
+            'title'        => 'string|required',
             'description' => 'string|required',
             'status'      => 'integer|required',
             'token'       => 'string|required'
@@ -166,37 +166,59 @@ class RepositoryController extends Controller
         $repoTags = $request->input('tags');
         $token = $request->input('token');
         $user = JWTAuth::authenticate($token);
+        
         $newRepo = new Repository;
-        $newRepo->name = $request->input('name');
+        $newRepo->title = $request->input('title');
         $newRepo->status = $request->input('status');
         $newRepo->description = $request->input('description');
-        $newRepo->creator = $user->id;
+        $newRepo->creator_id = $user->id;
+        $newRepo->creator_name = $user->nickname;
         $newRepo->save();
+        
         $tags = $request->input('tags');
         $useTags = Tag::whereIn('text', $tags)->get();
         Tag::whereIn('text',$tags)->increment('used');
         $haveTags = array();
         $tagsCreator = array();
         $tagRepoCreator = array();
-        foreach($useTags as $oneTag) {
-            $haveTags[] = $oneTag->text;
-            $tagRepoCreator[] = array('tagid' => $oneTag->id, 'repoid' => $newRepo->id, 'created_at' => date("Y-m-d H:i:s",time()) );
+        if(! empty($useTags) ) {
+            foreach($useTags as $oneTag) {
+                $haveTags[] = $oneTag->text;
+                $tagRepoCreator[] = array('tag_id' => $oneTag->id, 
+                                          'repo_id' => $newRepo->id, 
+                                          'created_at' => date("Y-m-d H:i:s",time()),
+                                          'updated_at' => date("Y-m-d H:i:s",time())  
+                                          );
+            }
         }
         $createTagsText = array_diff($tags, $haveTags);
-        foreach($createTagsText as $createTagText) {
-            $tagsCreator[] = array('text' => $createTagText, 'used' => 1, 'created_at' => date("Y-m-d H:i:s",time()));
+        if( !empty($createTagsText) ){
+            foreach($createTagsText as $createTagText) {
+                $tagsCreator[] = array('text' => $createTagText, 
+                                       'used' => 1, 
+                                       'created_at' => date("Y-m-d H:i:s",time()),
+                                       'updated_at' => date("Y-m-d H:i:s",time())
+                                      );
+            }
+            $createTags = Tag::whereIn('text', $createTagsText)->get();
         }
         if(!empty($tagsCreator)) {
             Tag::insert($tagsCreator);
         }
-        $createTags = Tag::whereIn('text', $createTagsText)->get();
-        foreach($createTags as $createTag) {
-            $tagRepoCreator[] = array('tagid' => $createTag->id, 'repoid' => $newRepo->id, 'created_at' => date("Y-m-d H:i:s",time()));
+        if( !empty($createTags) ) {
+            foreach($createTags as $createTag) {
+                $tagRepoCreator[] = array('tag_id' => $createTag->id, 
+                                          'repo_id' => $newRepo->id, 
+                                          'created_at' => date("Y-m-d H:i:s",time()),
+                                          'updated_at' => date("Y-m-d H:i:s",time())
+                                          );
+            }
+            TagItem::insert($tagRepoCreator);
         }
-        TagRepo::insert($tagRepoCreator);
-        $newRepo->tags;
-        setCreator($newRepo);
         
+        $newRepo->tags;
+        $newRepo['repoNum'] = 0;
+        $newRepo['linkNum'] = 0;
         return response()->json($newRepo);
     }
     
@@ -212,8 +234,6 @@ class RepositoryController extends Controller
     }
     
     public function addItems(Request $request, $repoId) {
-        //dd($request);
-        //dd($request->toArray());
          $this->validate($request, [
             'token' => 'string|required',
             'items' => 'array|required' 
@@ -222,33 +242,24 @@ class RepositoryController extends Controller
         $token = $request->input('token');
         $user = JWTAuth::authenticate($token);
         $thisRepo = Repository::findOrFail($repoId);
-        $haveRepo = Repolist::where('repoid', $repoId)->where('type', 0)->lists('itemid');
-        //dd($haveRepo->toA);
-        if($thisRepo->creator != $user->id) {
-            return "wrong user not allowed";
+        if($thisRepo->creator_id != $user->id) {
+            return response()->json(['error' => "wrong user not allowed"], 403);
         }
-        
+        $haveRepo = Repolist::where('repo_id', $repoId)->where('type', 0)->lists('item_id');
         $addItems = $request->input('items');
         $creatLinkList = array();
         foreach ($addItems as $addItem) {
             $v = Validator::make($addItem, [
                 'type' => 'integer|required|between:0,1'
             ]);
-            if ($v->fails()) {
-                return  "something wrong in v";
+             if ($v->fails()) {
+                return  response()->json(['error' => "something wrong in type"], 400);
             }
-             //dd(1);
-            // $this->validate($addItem, [
-            //     'type' => 'integer|required|between:0,1' 
-            // ]);
-            //dd($addItem);
             $itemType = $addItem['type'];
             if($itemType == 0) {
-                 $v1 = Validator::make($addItem, [
-                'repoId'        => 'integer|required'
-                ]);
+                $v1 = Validator::make($addItem, ['repoId' => 'integer|required']);
                 if ($v1->fails()) {
-                return  "something wrong in v1";
+                    return  response()->json(['error' => "something wrong in repoId"], 400);
                 }
                 $addRepoList[] = $addItem['repoId'];
             }
@@ -265,42 +276,34 @@ class RepositoryController extends Controller
                 ]);
                 //需测试没有id的情况]
                 if ($v2->fails()) {
-                return  "something wrong in v2";
+                     return  response()->json(['error' => "something wrong in link input"], 400);
                 }
-                //dd($addItem);
                 if(!empty( $addItem['link']['id'] )) {
-                    //dd($addItem['link']);
                     $addLinkList[] = $addItem['link']['id'];
                 }
                 else {
-                    //dd(1);
-                    
                     $creatLinkList[] = [ 
-                        'title' => $addItem['link']['title'], 
+                        'title' => $addItem['link']['title'],
+                        'repo_id' => $repoId, 
                         'description' => $addItem['link']['description'], 
                         'url' => $addItem['link']['url'], 
                         'created_at' => date("Y-m-d H:i:s",time()),
                         'updated_at' => date("Y-m-d H:i:s",time()),
                         'getId' => $getIdByToken
                         ];
-                   // $item = new Link;
-                    //$item->title = $request->input('link.title');
-                    //$item->creator = $user->id;
-                    //$item->description = $request->input('link.description');
-                   // $item->url = $request->input('link.url');
                 }
             }
             else {
-                return "no such type";
+                 return response()->json(['error' => "no such type"], 400);
             }
         } 
-        //dd($creatLinkList);
         $repolistInsert = array();
         if(!empty($addLinkList)) {
             $searchLinkResult = Link::whereIn('id', $addLinkList)->get();
             foreach($searchLinkResult as $Link) {
                 $creatLinkList[] = [ 
                         'title' => $Link->title, 
+                        'repo_id' => $repoId,
                         'description' => $Link->description, 
                         'url' => $Link->url, 
                         'created_at' => date("Y-m-d H:i:s",time()),
@@ -310,15 +313,14 @@ class RepositoryController extends Controller
             }
         }
         if(!empty($creatLinkList)) {
-           
            Link::insert($creatLinkList);
            $newLinks = Link::where('getId', $getIdByToken)->lists('id');
            Link::where('getId', $getIdByToken)->update(array('getId' => null));
            foreach($newLinks as $Link) {
                 $repolistInsert[] = [
-                    'repoid' => $repoId, 
+                    'repo_id' => $repoId, 
                     'type' => 1, 
-                    'itemid' => $Link,
+                    'item_id' => $Link,
                     'created_at' => date("Y-m-d H:i:s",time()),
                     'updated_at' => date("Y-m-d H:i:s",time())
                     ];
@@ -330,9 +332,9 @@ class RepositoryController extends Controller
             $searchRepoResult = Repository::whereIn('id', $addRepo)->get();
             foreach($searchRepoResult as $Repo) {
                 $repolistInsert[] = [
-                    'repoid' => $repoId, 
+                    'repo_id' => $repoId, 
                     'type' => 0, 
-                    'itemid' => $Repo->id,
+                    'item_id' => $Repo->id,
                     'created_at' => date("Y-m-d H:i:s",time()),
                     'updated_at' => date("Y-m-d H:i:s",time())
                     ];

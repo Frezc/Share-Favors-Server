@@ -14,7 +14,7 @@ class CreateRepolistsTable extends Migration
     {
         Schema::create('repolists', function (Blueprint $table) {
             $table->integer('repo_id')->unsigned();
-            $table->tinyInteger('type');//1为links，2为repositaries
+            $table->tinyInteger('type');//1为links，0为repositaries
             $table->integer('item_id');
             $table->tinyInteger('status')->default(1); //1 for public, 0 for private
             $table->timestamps();

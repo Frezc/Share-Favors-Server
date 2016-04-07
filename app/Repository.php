@@ -23,4 +23,8 @@ class Repository extends Model
     public function creator() {
         return $this->belongsTo('App\User', 'creator_id');
     }
+    
+    public function links() {
+        return $this->hasMany('App\Link', 'repo_id', 'id');
+    }
 }

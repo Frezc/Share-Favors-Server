@@ -46,6 +46,10 @@ class AuthenticateController extends Controller
                     "token" => $token, 
                     "expired_at" => time()+86400, 
                     "user" => [
+                                'email' => $user->email,
+                                'nickname' => $user->nickname,
+                                'id' => $user->id,
+                                'sign' => $user->sign,
                                 'starlist' => getRecentItems($user->starlist, 1, 10),
                                 'repositories' => getRecentItems($user->repositories, 1, 10)
                               ]

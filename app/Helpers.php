@@ -176,7 +176,7 @@ function getRecentItems($repoList, $showAll, $limit) {
                             ->get();
         addTagsToRepo($recentRepos);
         foreach($recentRepos as $Repo) {
-            $getRecentById[2][$Repo->id][] = $Repo;
+            $getRecentById[2][$Repo->id] = $Repo;
         }
     }  
     $setRepoById = array();   

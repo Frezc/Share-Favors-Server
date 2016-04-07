@@ -14,7 +14,7 @@ class Repository extends Model
     //     return $this->belongsToMany('App\Tag', 'tagrepo', 'repo_id', 'tag_id');
     // }
     public function tags() {
-        return $this->morphToMany('App\Tag', 'tagitems');
+        return $this->morphToMany('App\Tag', 'tagitem', 'tagitems', 'tag_id', 'item_id');
     }
     public function starby() {
         return $this->belongsToMany('App\User', 'starlists', 'repo_id', 'user_id');

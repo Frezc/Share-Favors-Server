@@ -29,40 +29,59 @@ class RepositoryController extends Controller
         $offset   = $request->input('offset', 0);
         $showlist = $request->input('showList', true);
         $token    = $request->input('token');
-        $oneRepo = Repository::findOrFail($id);
+        try{
+            $oneRepo = Repository::findOrFail($id);
+        } catch(\Exception $e) {
+            return response()->json(['error' => 'no this repository'], 404);
+        }
         if(!$oneRepo->status){
             if (!$token) {
                 return response()->json(['error' => 'This repository is invisible'], 403);
             }
             $user = JWTAuth::authenticate($token);
-            if($user->id != $oneRepo->creator) {
+            if($user->id != $oneRepo->creator_id) {
                 return response()->json(['error' => 'This repository is invisible'], 403);
             }
         }
         $result = array();
-        $result['repository'] = $oneRepo->toArray();
-        $result['repository']['tags'] = array();
-        $result['list'] = array();
-        foreach ($oneRepo->tags as $tag) {
-            $result['repository']['tags'][] = $tag->toArray();
-        }
+        $oneRepo->tags;
+        $result['repository'] = $oneRepo;
+        $result['items'] = array();
+        $searchRepo = array();
+        $searchLink = array();
         if($showlist) {
-            $itemlist = Repolist::where('repoid', $id)->orderBy('updated_at', 'DESC')->take($limit)->get();
+            $itemlist = Repolist::where('repo_id', $id)
+                                ->orderBy('updated_at', 'DESC')
+                                ->skip($offset)
+                                ->take($limit)
+                                ->get();
             foreach ($itemlist as $item) {
-                //仓库为0 link是1
-                if($item->type == 0) {
-                    $itemdetail = Repository::findOrFail($item->itemid);
-                    if(!$itemdetail->status){
+                //1为links，2为repositaries
+                if($item->type == 2) {
+                    if(!$item->status && $user->id != $oneRepo->creator_id) {
                         continue;
                     }
-                    setCreator($itemdetail);
-                    $itemdetail->tags;
-                    $result['list'][]=['type' => 0, 'repository' => $itemdetail];
+                    $searchRepo[] = $item->item_id;
                 }
-                else{
-                     $itemdetail = Link::findOrFail($item->itemid);
-                     $itemdetail->tags;
-                     $result['list'][]=['type' => 1, 'link' => $itemdetail];
+                if($item->type ==1) {
+                    if(!$item->status && $user->id != $oneRepo->creator_id) {
+                        continue;
+                    }
+                    $searchLink[] = $item->item_id;
+                }
+            }
+            if( !empty($searchLink) ) {
+                $item_link = Link::where('id', $searchLink)->orderBy('updated_at', 'DESC')->get();
+                addTagsToLink($item_link);
+                foreach( $item_link as $link) {
+                    $result['items'][] = ['link' => $link, 'type' => 1];
+                }
+            }
+            if( !empty($searchRepo) ) {
+                $item_Repo = Repository::where('id', $searchRepo)->orderBy('updated_at', 'DESC')->get();
+                addTagsToRepo($item_Repo);
+                foreach( $item_Repo as $repo) {
+                    $result['items'][] = ['repository' => $repo, 'type' => 2];
                 }
             }
         }

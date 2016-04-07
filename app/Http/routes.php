@@ -39,6 +39,7 @@ Route::get('refreshToken', 'AuthenticateController@refreshToken');
 
 Route::get('user/{id}', 'AuthenticateController@getUserinfo');
 Route::get('user/{userId}/repository', 'AuthenticateController@showUserRepo');
+Route::get('user/{userId}/starList', 'AuthenticateController@showUserStarlist');
 /*
 |--------------------------------------------------------------------------
 | Application Routes

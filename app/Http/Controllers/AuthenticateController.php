@@ -58,9 +58,10 @@ class AuthenticateController extends Controller
             "expired_at" => time()+86400, 
             "user" => ['starlist' => getRecentItems($user->starlist, 0),
                         'nickname' => $user->nickname, 
-                        'email' => $user->email 
+                        'email' => $user->email,
+                        "repostories" => getRecentItems($repoList, 0)
                       ],
-            "repostories" => getRecentItems($repoList, 0)
+           // "repostories" => getRecentItems($repoList, 0)
             ];
         //dd(1);
         return response()->json($package);

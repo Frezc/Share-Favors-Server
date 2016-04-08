@@ -34,6 +34,7 @@ Route::group(['middleware' => 'jwt.auth'], function() {
     
 });
 
+Route::post('profile', 'AuthenticateController@updateUserinfo');
 //刷新token的api
 Route::get('refreshToken', 'AuthenticateController@refreshToken');
 
@@ -71,3 +72,5 @@ Route::put('repository/{repoId}/list', 'RepositoryController@updateItems');
 
 Route::post('repository/{repoId}/tag', 'RepositoryController@addTags');
 Route::delete('repository/{repoId}/tag', 'RepositoryController@delTags');
+
+//Route::get('refreshAllNum', 'RepositoryController@refreshAllNum');

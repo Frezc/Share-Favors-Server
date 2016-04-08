@@ -50,6 +50,8 @@ class AuthenticateController extends Controller
                                 'nickname' => $user->nickname,
                                 'id' => $user->id,
                                 'sign' => $user->sign,
+                                'repoNum' => $user->repoNum,
+                                'starNum' => $user->starNum,
                                 'starlist' => getRecentItems($user->starlist, 1, 10),
                                 'repositories' => getRecentItems($user->repositories, 1, 10)
                               ]
@@ -73,6 +75,8 @@ class AuthenticateController extends Controller
                                 'nickname' => $user->nickname,
                                 'id' => $user->id,
                                 'sign' => $user->sign,
+                                'repoNum' => $user->repoNum,
+                                'starNum' => $user->starNum,
                                 'starlist' => getRecentItems($user->starlist, 1, 10),
                                 'repositories' => getRecentItems($user->repositories, 1, 10)
                               ]
@@ -112,6 +116,24 @@ class AuthenticateController extends Controller
         return $this->auth($request);
     }
     
+    public function updateUserinfo(Request $request) {
+        $this->validate($request, [
+            'token' => 'string|required',
+            'nickname' => 'string|max:16',
+            'sign' => 'string'
+        ]);
+        $token = $request->input('token');
+        $user = JWTAuth::authenticate($token);
+        if(!empty(  $request->input('nickname') ) ) {
+            $user->nickname = $request->input('nickname');
+        }
+        if(!empty(  $request->input('sign') ) ) {
+            $user->sign = $request->input('sign');
+        }
+        $user->save();
+        return $this->getUserinfo($request, $user->id);
+    } 
+    
     public function getUserinfo(Request $request, $id) {
         $this->validate($request, [
             'starListMax'     => 'integer',
@@ -136,6 +158,8 @@ class AuthenticateController extends Controller
                     'email'    => $user->email, 
                     'nickname' => $user->nickname,
                     'id' => $user->id,
+                    'repoNum' => $user->repoNum,
+                    'starNum' => $user->starNum,
                     'starlist' => getRecentItems($user->starlist, 1, 10),
                     'repositories' => getRecentItems($user->repositories, 1, 10)
                     ];
@@ -198,11 +222,17 @@ class AuthenticateController extends Controller
         }
         $count = count($repoList->toArray());
         $response['repoList'] = array();
-        $response['repoNumAll'] = Repository::where('creator_id', $userId)->count();
+        if($guest) {
+            $response['repoNumAll'] = Repository::where('creator_id', $userId)->where('status', 1)->count();
+        }
+        else {
+            $response['repoNumAll'] = Repository::where('creator_id', $userId)->count();
+        }
         addTagsToRepo( $repoList );
         $response['repoList'] = getRecentItems($repoList, $response['showAll'], $recentItems);
         $response['repoNum'] = $count;
         return response()->json($response);
+        
     }
     
     public function showUserStarlist(Request $request, $userId) {
@@ -255,9 +285,15 @@ class AuthenticateController extends Controller
                              ->get();
         }
         addTagsToRepo($starlist);
-        $response['repoNumAll'] = $user->starlist()->count();
+        //$response['repoNumAll'] = $user->starlist()->count();
         $response['repoNum'] = count($starlist);
         $response['repoList'] = getRecentItems($starlist, $response['showAll'], $recentItems);
+        if(!$response['showAll']) {
+            $response['repoNumAll'] = Repository::where('creator_id', $userId)->where('status', 1)->count();
+        }
+        else {
+            $response['repoNumAll'] = Repository::where('creator_id', $userId)->count();
+        }
         return response()->json($response);
     }
 }

@@ -21,6 +21,7 @@ class CreateLinksTable extends Migration
             $table->timestamps();
             $table->string('getId', 6);
             $table->index(['title']);
+            $table->softDeletes();
         });
     }
 

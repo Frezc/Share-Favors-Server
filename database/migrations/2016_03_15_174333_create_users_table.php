@@ -18,6 +18,8 @@ class CreateUsersTable extends Migration
             $table->string('email')->unique();
             $table->string('password', 60);
             $table->text('sign')->nullable();
+            $table->integer('repoNum')->unsigned()->default(0);
+            $table->integer('starNum')->unsigned()->default(0);
            // $table->text('starlist')->nullable();
             $table->timestamps();
             

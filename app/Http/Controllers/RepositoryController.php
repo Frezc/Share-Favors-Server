@@ -11,6 +11,8 @@ use App\Repolist;
 use App\TagRepo;
 use App\TagLink;
 use App\TagItem;
+use App\User;
+use App\Starlist;
 use JWTAuth;
 
 class RepositoryController extends Controller
@@ -83,14 +85,14 @@ class RepositoryController extends Controller
                 }
             }
             if( !empty($searchLink) ) {
-                $item_link = Link::where('id', $searchLink)->orderBy('updated_at', 'DESC')->get();
+                $item_link = Link::whereIn('id', $searchLink)->orderBy('updated_at', 'DESC')->get();
                 addTagsToLink($item_link);
                 foreach( $item_link as $link) {
                     $result['items'][] = ['link' => $link, 'type' => 1];
                 }
             }
             if( !empty($searchRepo) ) {
-                $item_Repo = Repository::where('id', $searchRepo)->orderBy('updated_at', 'DESC')->get();
+                $item_Repo = Repository::whereIn('id', $searchRepo)->orderBy('updated_at', 'DESC')->get();
                 addTagsToRepo($item_Repo);
                 foreach( $item_Repo as $repo) {
                     $result['items'][] = ['repository' => $repo, 'type' => 0];
@@ -125,7 +127,7 @@ class RepositoryController extends Controller
         if( empty($request->tags) && 
             empty($request->status) && 
             empty($request->description) && 
-            empty($request->name) ) {
+            empty($request->title) ) {
                 return response()->json(['error' => 'nothing was input,please check your input'], 400);
             }
         if( !empty($request->status) ) {
@@ -143,7 +145,6 @@ class RepositoryController extends Controller
     }
 
     public function destroy(Request $request, $id) {
-        //dd($request->toArray());
          $this->validate($request, [
             'token' => 'string|required',
             'repoName' => 'string|required' 
@@ -151,7 +152,7 @@ class RepositoryController extends Controller
         $token = $request->input('token');
         $user = JWTAuth::authenticate($token);
         try{
-            $thisRepo = Repository::where('id', $id)->where('name', $request->repoName)->firstOrFail();
+            $thisRepo = Repository::where('id', $id)->where('title', $request->repoName)->firstOrFail();
         } catch(\Exceptions $e) {
             return response()->json(['error' => 'repository not found'], 404);
         }
@@ -159,7 +160,8 @@ class RepositoryController extends Controller
             return response()->json(['error' => 'wrong user'], 403);
         }
         $thisRepo->delete();
-        
+        $user->repoNum = Repository::where('creator_id', $user->id)->count();
+        $user->save();
         return response()->json(['delete success']);
     }
     
@@ -183,7 +185,8 @@ class RepositoryController extends Controller
         $newRepo->creator_id = $user->id;
         $newRepo->creator_name = $user->nickname;
         $newRepo->save();
-        
+        $user->repoNum = Repository::where('creator_id', $user->id)->count();
+        $user->save();
         $tags = $request->input('tags');
         $useTags = Tag::whereIn('text', $tags)->lists('text');
         $tagsCreator = array();
@@ -215,8 +218,6 @@ class RepositoryController extends Controller
         }
         
         $newRepo->tags;
-        $newRepo['repoNum'] = 0;
-        $newRepo['linkNum'] = 0;
         return response()->json($newRepo);
     }
     
@@ -224,7 +225,7 @@ class RepositoryController extends Controller
          $this->validate($request, [
             'tags'        => 'array|required',
             'tags.*'      => 'string',
-            'name'        => 'string|required',
+            'title'        => 'string|required',
             'description' => 'string|required',
             'status'      => 'integer|required',
             'token'       => 'string|required'
@@ -350,7 +351,9 @@ class RepositoryController extends Controller
         if(!empty($repolistInsert)) {
             Repolist::insert($repolistInsert);
         }
-        
+        $thisRepo->repoNum = Repolist::where('repo_id', $repoId)->where('type', 0)->count();
+        $thisRepo->linkNum = Repolist::where('repo_id', $repoId)->where('type', 1)->count(); 
+        $thisRepo->save();
         return "add item success";
     }
     
@@ -358,7 +361,7 @@ class RepositoryController extends Controller
          $this->validate($request, [
             'token' => 'string|required',
             'items' => 'array|required' 
-        ]);
+         ]);
         
          $token = $request->input('token');
          $delItems = $request->input('items');
@@ -366,10 +369,10 @@ class RepositoryController extends Controller
          $thisRepo = Repository::findOrFail($repoId);
          if($thisRepo->creator_id != $user->id) {
             return response()->json(["wrong user not allowed"],403);
-        }
-        $repoDelList = array();
-        $linkDelList = array();
-        foreach($delItems as $delItem) {
+         }
+         $repoDelList = array();
+         $linkDelList = array();
+         foreach($delItems as $delItem) {
             $v = Validator::make($delItem, [
                 'type' => 'integer|required|between:0,1',
                 'id'   => 'integer|required'
@@ -385,14 +388,16 @@ class RepositoryController extends Controller
             if($delItem['type'] == 1) {
                 $linkDelList[] = $delItem['id'];
             }
-        }
+         }
         
-        Repolist::where('repo_id', $repoId)->where('type', 0)->whereIn('item_id', $repoDelList)->delete();
-        Repolist::where('repo_id', $repoId)->where('type', 1)->whereIn('item_id', $linkDelList)->delete();
-        Link::whereIn('id', $linkDelList)->delete();
-        TagItem::whereIn('item_id', $linkDelList)->where('tagitems_type', 'App\Link')->delete();
-        
-        return "items delete success";
+         Repolist::where('repo_id', $repoId)->where('type', 0)->whereIn('item_id', $repoDelList)->delete();
+         Repolist::where('repo_id', $repoId)->where('type', 1)->whereIn('item_id', $linkDelList)->delete();
+         Link::whereIn('id', $linkDelList)->delete();
+         TagItem::whereIn('item_id', $linkDelList)->where('tagitems_type', 'App\Link')->delete();
+         $thisRepo->repoNum = Repolist::where('repo_id', $repoId)->where('type', 0)->count();
+         $thisRepo->linkNum = Repolist::where('repo_id', $repoId)->where('type', 1)->count(); 
+         $thisRepo->save();
+         return "items delete success";
     }
     
     public function addTags(Request $request, $repoId) {
@@ -484,4 +489,21 @@ class RepositoryController extends Controller
         }
         return response()->json($delTags);
     }
+    
+    // public function refreshAllNum() {
+    //     $repos = Repository::where('deleted_at', null)->get();
+    //     $users = User::all();
+        
+    //     foreach($repos as $thisRepo) {
+    //         $thisRepo->repoNum = Repolist::where('repo_id', $thisRepo->id)->where('type', 0)->count();
+    //         $thisRepo->linkNum = Repolist::where('repo_id', $thisRepo->id)->where('type', 1)->count(); 
+    //         $thisRepo->save();
+    //     } 
+    //     foreach($users as $user) {
+    //         $user->repoNum = Repository::where('creator_id', $user->id)->count();
+    //         $user->starNum = Starlist::where('user_id', $user->id)->count();
+    //         $user->save();
+    //     }
+    //     return "ok";
+    // }
 }

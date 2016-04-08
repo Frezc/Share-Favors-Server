@@ -59,6 +59,7 @@ class AuthenticateController extends Controller
             "user" => ['starlist' => getRecentItems($user->starlist, 0),
                         'nickname' => $user->nickname, 
                         'email' => $user->email,
+                        'id' => $user->id,
                         "repostories" => getRecentItems($repoList, 0)
                       ],
            // "repostories" => getRecentItems($repoList, 0)

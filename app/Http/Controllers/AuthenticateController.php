@@ -61,9 +61,23 @@ class AuthenticateController extends Controller
         $this->validate($request, [
             'token' => 'required'
         ]);
-        
-        //todo
-        return JWTAuth::refresh($request->input('token'));
+        $token = JWTAuth::refresh($request->input('token'));
+        $user = JWTAuth::authenticate($token);
+        addTagsToRepo($user->starlist);
+        addTagsToRepo($user->repositories);
+        $package = [
+                    "token" => $token, 
+                    "expired_at" => time()+86400, 
+                    "user" => [
+                                'email' => $user->email,
+                                'nickname' => $user->nickname,
+                                'id' => $user->id,
+                                'sign' => $user->sign,
+                                'starlist' => getRecentItems($user->starlist, 1, 10),
+                                'repositories' => getRecentItems($user->repositories, 1, 10)
+                              ]
+                    ];
+        return response()->json($package);
     }
     
     public function register(Request $request) {
@@ -140,28 +154,34 @@ class AuthenticateController extends Controller
         $offset = $request->input('offset', 0);
         $recentItems = $request->input('recentItems', 3);
         if(!empty($token)) {
-            $user = JWTAuth::authenticate($token);
-             if($user->id == $userId) {
+             try{
+                 $user = JWTAuth::authenticate($token);
+             } catch(\Exception $e) {
+                 $guest = 1;
+             }
+        }
+        if(!empty($token) && !empty($user->id) ) {
+            if($user->id == $userId ) {
                 $repoList = Repository::where('creator_id', $userId)
                                     ->orderBy('updated_at', 'DESC')
                                     ->skip($offset)
                                     ->take($limit)
                                     ->get();
                 $response = ['showAll' => 1];
-             }
-             else{
+            }
+            else{
                 $repoList = Repository::where('creator_id', $userId)->where('status', 1)
-                                  ->orderBy('updated_at', 'DESC')
-                                  ->skip($offset)
-                                  ->take($limit)
-                                  ->get();
+                                ->orderBy('updated_at', 'DESC')
+                                ->skip($offset)
+                                ->take($limit)
+                                ->get();
                 $response = ['showAll' => 0];
                 try{
                     $user = User::findOrFail($userId);
                 } catch(\Exception $e) {
                     return response()->json(['error' => 'user not find', 404]);
                 }
-             }
+            }
         }
         else{
              $repoList = Repository::where('creator_id', $userId)->where('status', 1)
@@ -171,7 +191,7 @@ class AuthenticateController extends Controller
                                   ->get();
              $response = ['showAll' => 0];
              try{
-                    $user = User::findOrFail($userId);
+                $user = User::findOrFail($userId);
              } catch(\Exception $e) {
                 return response()->json(['error' => 'user not find', 404]);
              }

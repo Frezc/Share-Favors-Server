@@ -9,7 +9,7 @@ class Link extends Model
     protected $hidden = ['getId'];
     
     public function tags() {
-        return $this->morphToMany('App\Tag','tagitem', 'tagitems', 'tag_id', 'item_id');
+        return $this->morphToMany('App\Tag', 'tagitems', 'tagitems', 'item_id', 'tag_id', false);
     }
     
     public function repository() {

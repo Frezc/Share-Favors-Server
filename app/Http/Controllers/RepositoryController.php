@@ -10,6 +10,7 @@ use App\Link;
 use App\Repolist;
 use App\TagRepo;
 use App\TagLink;
+use App\TagItem;
 use JWTAuth;
 
 class RepositoryController extends Controller
@@ -29,17 +30,26 @@ class RepositoryController extends Controller
         $offset   = $request->input('offset', 0);
         $showlist = $request->input('showList', true);
         $token    = $request->input('token');
+        $guest = 1;
         try{
             $oneRepo = Repository::findOrFail($id);
         } catch(\Exception $e) {
             return response()->json(['error' => 'no this repository'], 404);
         }
-        if(!$oneRepo->status){
-            if (!$token) {
-                return response()->json(['error' => 'This repository is invisible'], 403);
+        if( !empty($token) ) {
+            try{
+                $user = JWTAuth::authenticate($token);
+            } catch(\Exception $e) {
+                $guest = 1;
             }
-            $user = JWTAuth::authenticate($token);
-            if($user->id != $oneRepo->creator_id) {
+            if( !empty($user) ) {
+                if($user->id == $oneRepo->creator_id) {
+                    $guest = 0;
+                }
+            }
+        }
+        if(!$oneRepo->status){
+            if($guest) {
                 return response()->json(['error' => 'This repository is invisible'], 403);
             }
         }
@@ -60,13 +70,13 @@ class RepositoryController extends Controller
             foreach ($itemlist as $item) {
                 //1为links，0为repositaries
                 if($item->type == 0) {
-                    if(!$item->status && $user->id != $oneRepo->creator_id) {
+                    if(!$item->status && $guest) {
                         continue;
                     }
                     $searchRepo[] = $item->item_id;
                 }
                 if($item->type == 1) {
-                    if(!$item->status && $user->id != $oneRepo->creator_id) {
+                    if(!$item->status && $guest) {
                         continue;
                     }
                     $searchLink[] = $item->item_id;
@@ -95,12 +105,11 @@ class RepositoryController extends Controller
     public function update(Request $request, $id) {
         $this->validate($request, [
             'token' => 'string|required',
-            'repoName' => 'string|required' ,
             'tags'  => 'array',
             'tags.*' => 'string',
             'status' => 'integer',
             'description' => 'string',
-            'name' => 'string'
+            'title' => 'string'
         ]);
         
         $token = $request->input('token');
@@ -110,7 +119,7 @@ class RepositoryController extends Controller
         } catch(\Exceptions $e) {
             return response()->json(['error' => 'repository not found'], 404);
         }    
-        if($thisRepo->creator != $user->id) {
+        if($thisRepo->creator_id != $user->id) {
             return response()->json(['error' => 'wrong user'], 403);
         }
         if( empty($request->tags) && 
@@ -146,7 +155,7 @@ class RepositoryController extends Controller
         } catch(\Exceptions $e) {
             return response()->json(['error' => 'repository not found'], 404);
         }
-        if($thisRepo->creator != $user->id) {
+        if($thisRepo->creator_id != $user->id) {
             return response()->json(['error' => 'wrong user'], 403);
         }
         $thisRepo->delete();
@@ -176,22 +185,10 @@ class RepositoryController extends Controller
         $newRepo->save();
         
         $tags = $request->input('tags');
-        $useTags = Tag::whereIn('text', $tags)->get();
-        Tag::whereIn('text',$tags)->increment('used');
-        $haveTags = array();
+        $useTags = Tag::whereIn('text', $tags)->lists('text');
         $tagsCreator = array();
         $tagRepoCreator = array();
-        if(! empty($useTags) ) {
-            foreach($useTags as $oneTag) {
-                $haveTags[] = $oneTag->text;
-                $tagRepoCreator[] = array('tag_id' => $oneTag->id, 
-                                          'repo_id' => $newRepo->id, 
-                                          'created_at' => date("Y-m-d H:i:s",time()),
-                                          'updated_at' => date("Y-m-d H:i:s",time())  
-                                          );
-            }
-        }
-        $createTagsText = array_diff($tags, $haveTags);
+        $createTagsText = array_diff($tags, $useTags->toArray());
         if( !empty($createTagsText) ){
             foreach($createTagsText as $createTagText) {
                 $tagsCreator[] = array('text' => $createTagText, 
@@ -200,15 +197,16 @@ class RepositoryController extends Controller
                                        'updated_at' => date("Y-m-d H:i:s",time())
                                       );
             }
-            $createTags = Tag::whereIn('text', $createTagsText)->get();
         }
         if(!empty($tagsCreator)) {
             Tag::insert($tagsCreator);
         }
-        if( !empty($createTags) ) {
-            foreach($createTags as $createTag) {
-                $tagRepoCreator[] = array('tag_id' => $createTag->id, 
-                                          'repo_id' => $newRepo->id, 
+        $addTags = Tag::whereIn('text', $tags)->get();
+        if( !empty($addTags) ) {
+            foreach($addTags as $addTag) {
+                $tagRepoCreator[] = array('tag_id' => $addTag->id, 
+                                          'item_id' => $newRepo->id, 
+                                          'tagitems_type' => 'App\Repository',
                                           'created_at' => date("Y-m-d H:i:s",time()),
                                           'updated_at' => date("Y-m-d H:i:s",time())
                                           );
@@ -269,10 +267,7 @@ class RepositoryController extends Controller
                 'link.tags.*.text'  => 'string',
                 'link.tags.*.id' => 'integer',
                 'link.tags.*.used' => 'integer',
-                'link.id'      => 'integer',
-                'link.description'  => 'string|required',
-                'link.title'        => 'string|required',
-                'link.url'          => 'string|required'
+                'link.id'      => 'integer'
                 ]);
                 //需测试没有id的情况]
                 if ($v2->fails()) {
@@ -282,6 +277,14 @@ class RepositoryController extends Controller
                     $addLinkList[] = $addItem['link']['id'];
                 }
                 else {
+                    $v_linkDetail = Validator::make($addItem, [
+                        'link.description'  => 'string|required',
+                        'link.title'        => 'string|required',
+                        'link.url'          => 'string|required'
+                    ]);
+                    if ($v_linkDetail->fails()) {
+                     return  response()->json(['error' => "if you don't know link id please input title url and description"], 400);
+                    }
                     $creatLinkList[] = [ 
                         'title' => $addItem['link']['title'],
                         'repo_id' => $repoId, 
@@ -331,13 +334,16 @@ class RepositoryController extends Controller
             $addRepo = array_diff($addRepoList, $haveRepo->toArray());
             $searchRepoResult = Repository::whereIn('id', $addRepo)->get();
             foreach($searchRepoResult as $Repo) {
-                $repolistInsert[] = [
-                    'repo_id' => $repoId, 
-                    'type' => 0, 
-                    'item_id' => $Repo->id,
-                    'created_at' => date("Y-m-d H:i:s",time()),
-                    'updated_at' => date("Y-m-d H:i:s",time())
-                    ];
+                if($Repo->status == 1 || ($Repo->status == 0 && $Repo->creator_id == $user->id) ) {
+                    $repolistInsert[] = [
+                        'repo_id' => $repoId, 
+                        'type' => 0, 
+                        'item_id' => $Repo->id,
+                        'status' => $Repo->status,
+                        'created_at' => date("Y-m-d H:i:s",time()),
+                        'updated_at' => date("Y-m-d H:i:s",time())
+                        ];
+                }
             }
         }
         
@@ -350,18 +356,16 @@ class RepositoryController extends Controller
     
     public function deleteItems(Request $request, $repoId) {
          $this->validate($request, [
-            //'items.*.id'    => 'integer|required',
             'token' => 'string|required',
             'items' => 'array|required' 
-            //'type'  => 'integer|required'
         ]);
         
          $token = $request->input('token');
          $delItems = $request->input('items');
          $user = JWTAuth::authenticate($token);
          $thisRepo = Repository::findOrFail($repoId);
-         if($thisRepo->creator != $user->id) {
-            return "wrong user not allowed";
+         if($thisRepo->creator_id != $user->id) {
+            return response()->json(["wrong user not allowed"],403);
         }
         $repoDelList = array();
         $linkDelList = array();
@@ -371,7 +375,7 @@ class RepositoryController extends Controller
                 'id'   => 'integer|required'
             ]);
             if ($v->fails()) {
-                return  "something wrong in type:".$addItem['type']." or id:".$addItem['id'];
+                return  response()->json([ "something wrong in type:".$addItem['type']." or id:".$addItem['id'] ],400);
             }
             
             if($delItem['type'] == 0) {
@@ -383,10 +387,10 @@ class RepositoryController extends Controller
             }
         }
         
-        Repolist::where('repoid', $repoId)->where('type', 0)->whereIn('itemid', $repoDelList)->delete();
-        Repolist::where('repoid', $repoId)->where('type', 1)->whereIn('itemid', $linkDelList)->delete();
+        Repolist::where('repo_id', $repoId)->where('type', 0)->whereIn('item_id', $repoDelList)->delete();
+        Repolist::where('repo_id', $repoId)->where('type', 1)->whereIn('item_id', $linkDelList)->delete();
         Link::whereIn('id', $linkDelList)->delete();
-        TagLink::whereIn('linkid', $linkDelList)->delete();
+        TagItem::whereIn('item_id', $linkDelList)->where('tagitems_type', 'App\Link')->delete();
         
         return "items delete success";
     }
@@ -398,27 +402,86 @@ class RepositoryController extends Controller
             'tags.*' => 'string|required'
         ]);
         
-        if( !empty($request->tags) ) {
-            foreach($tags = $request->input('tags') as $tag) {
-                $searchTagsByText[] = str_replace(' ', '',$tag);
-            }
-            $haveTags = Tag::whereIn('text', $searchTagsByText)->get();
-            $creatTags = array_diff($searchTagsByText, $haveTags);
-            $tagInsert = array();
-            foreach($creatTags as $creatTag) {
-                $tagInsert[] = [
-                    'text' => $creatTag,
-                    'used' => 0,
-                    'created_at' => date("Y-m-d H:i:s",time()),
-                    'updated_at' => date("Y-m-d H:i:s",time())
-                ];
-            }
-            Tag::insert( $tagInsert );
-            $tagsDetail = Tag::whereIn('text', $searchTagsByText)->increment('used')->get();
-        } 
+        $token = $request->input('token');
+        $user = JWTAuth::authenticate($token);
+        try{ 
+            $thisRepo = Repository::findOrFail($repoId);
+        } catch(\Exceptions $e) {
+            return response()->json(['error' => 'please input right repoid'], 400);
+        }
+       
+        if($thisRepo->creator_id != $user->id) {
+            return response()->json(['error' => 'wrong user'], 403);
+        }
+        $hadTags = array();
+        foreach($thisRepo->tags as $tag) {
+            $hadTags[] = $tag->text;
+        }
+        foreach($tags = $request->input('tags') as $tag) {
+            $requestTags[] = str_replace(' ', '',$tag);
+        }
+        $searchTagsByText = array_diff($requestTags, $hadTags);
+        $haveTags = Tag::whereIn('text', $searchTagsByText)->lists('text');
+        $creatTags = array_diff($searchTagsByText, $haveTags->toArray());
+        $tagInsert = array();
+        foreach($creatTags as $creatTag) {
+            $tagInsert[] = [
+                'text' => $creatTag,
+                'used' => 0,
+                'created_at' => date("Y-m-d H:i:s",time()),
+                'updated_at' => date("Y-m-d H:i:s",time())
+            ];
+        }
+        Tag::insert( $tagInsert );
+        Tag::whereIn('text', $searchTagsByText)->increment('used');
+        $tagsDetail = Tag::whereIn('text', $searchTagsByText)->get();
+        $tagRepoList = array();
+        foreach ($tagsDetail as $tag) {
+            $tagRepoList[] = [
+                'item_id' => $repoId, 
+                'tag_id' => $tag->id,
+                'tagitems_type' =>  'APP\Repository',
+                'created_at' => date("Y-m-d H:i:s",time()),
+                'updated_at' => date("Y-m-d H:i:s",time())
+            ];
+        }
+        TagItem::insert( $tagRepoList );
+        return response()->json($tagsDetail);
     }
     
     public function delTags(Request $request, $repoId) {
+        $this->validate($request, [
+            'token' => 'string|required',
+            'tags' => 'array|required' ,
+            'tags.*' => 'string|required'
+        ]);
+        $token = $request->input('token');
+        $user = JWTAuth::authenticate($token);
+        try{ 
+            $thisRepo = Repository::findOrFail($repoId);
+        } catch(\Exceptions $e) {
+            return response()->json(['error' => 'please input right repoid'], 400);
+        }
+       
+        if($thisRepo->creator_id != $user->id) {
+            return response()->json(['error' => 'wrong user'], 403);
+        }
         
+        foreach($tags = $request->input('tags') as $tag) {
+            $searchTagsByText[] = str_replace(' ', '',$tag);
+        }
+        $delTags = Tag::whereIn('text', $searchTagsByText)->get();
+        Tag::whereIn('text', $searchTagsByText)->decrement('used');
+        $delTagItem = array();
+        foreach ($delTags as $delTag) {
+            $delTagItem[] = $delTag->id;
+        }
+        if( !empty($delTagItem) ) {
+            TagItem::whereIn('tag_id', $delTagItem)
+                   ->where('item_id', $repoId)
+                   ->where('tagitems_type', 'App\Repository')
+                   ->delete();
+        }
+        return response()->json($delTags);
     }
 }

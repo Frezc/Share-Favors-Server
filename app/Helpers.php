@@ -78,7 +78,7 @@ function addTagsToRepo($itemList) {
     foreach($itemList as $item) {
         $itemsId[] = $item->id;
     }
-    $tagRepos = TagItem::whereIn('item_id', deMul($itemsId))->where('tagitem_type', 'App\Repository')->get();
+    $tagRepos = TagItem::whereIn('item_id', deMul($itemsId))->where('tagitems_type', 'App\Repository')->get();
     $tagsId = array();
     foreach($tagRepos as $tagRepo) {
         $tagsId[] = $tagRepo->tag_id;
@@ -106,7 +106,7 @@ function addTagsToLink($itemList) {
     foreach($itemList as $item) {
         $itemsId[] = $item->id;
     }
-    $tagLinks = TagItem::whereIn('item_id', deMul($itemsId))->where('tagitem_type', 'App\Link')->get();
+    $tagLinks = TagItem::whereIn('item_id', deMul($itemsId))->where('tagitems_type', 'App\Link')->get();
     $tagsId = array();
     foreach($tagLinks as $tagLink) {
         $tagsId[] = $tagLink->tag_id;

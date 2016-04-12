@@ -25,7 +25,8 @@ class CreateRepositoriesTable extends Migration
             $table->timestamps();
             $table->softDeletes();
             
-            $table->index(['title', 'creator_id']);
+            $table->index('title');
+            $table->index('creator_id')
         });
     }
 

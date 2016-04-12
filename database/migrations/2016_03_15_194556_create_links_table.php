@@ -20,8 +20,10 @@ class CreateLinksTable extends Migration
             $table->string('url');
             $table->timestamps();
             $table->string('getId', 6);
-            $table->index(['title']);
             $table->softDeletes();
+
+            $table->index('title');
+            $table->index('repo_id');
         });
     }
 

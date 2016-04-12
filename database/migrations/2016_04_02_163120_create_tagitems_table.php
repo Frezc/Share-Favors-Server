@@ -18,7 +18,8 @@ class CreateTagitemsTable extends Migration
             $table->string('tagitem_type',20);
             $table->timestamps();
             
-            $table->index(['tag_id', 'item_id', 'tagitem_type']);
+            $table->index(['item_id', 'tagitem_type']);
+            $table->index(['tag_id', 'tagitem_type']);
         });
     }
 

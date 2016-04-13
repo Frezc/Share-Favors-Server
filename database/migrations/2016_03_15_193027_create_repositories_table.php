@@ -26,7 +26,7 @@ class CreateRepositoriesTable extends Migration
             $table->softDeletes();
             
             $table->index('title');
-            $table->index('creator_id')
+            $table->index('creator_id');
         });
     }
 

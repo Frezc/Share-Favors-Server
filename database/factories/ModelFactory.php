@@ -22,7 +22,7 @@ $factory->define(App\User::class, function (Faker\Generator $faker) {
 
 $factory->define(App\Repository::class, function ($faker) {
    return [
-        'title' => 'test repo title'.str_random(6),
+        'title' => 'test repo title '.str_random(6),
         'creator_id' => rand(1,20),
         'creator_name' => $faker->name,
         'status' => rand(0,1),
@@ -33,9 +33,10 @@ $factory->define(App\Repository::class, function ($faker) {
 
 $factory->define(App\Link::class, function ($faker) {
    return [
-        'title' => 'test link title'.str_random(6),
-        'url' => str_random(10),
-        'description' => str_random(9)
+        'title' => 'test link title '.str_random(6),
+        'url' => $faker->url,
+        'description' => str_random(9),
+        'repo_id' => rand(1,100)
    ];
 });
 
@@ -46,26 +47,29 @@ $factory->define(App\Tag::class, function () {
     ];
 });
 
-$factory->define(App\Tag::class, function () {
-    return [
-        'text' => str_random(6),
-        'used' => rand(1,10)
-    ];
-});
-
 $factory->define(App\TagItem::class, function() {
-    $index[0] = App\Repository;
-    $index[1] = App\Link;
+    $index[0] = 'App\Repository';
+    $index[1] = 'App\Link';
     return [
         'tag_id' => rand(1,10),
-        'item_id' => rand(1,100),
-        'tagitem_id' => $index[rand(0,1)]
+        'item_id' => rand(1,2000),
+        'tagitems_type' => $index[rand(0,1)]
+        
     ];
 });
 
 $factory->define(App\Starlist::class, function() {
     return [
         'user_id' => rand(1,20),
-        'repo_id' => rand(1,100)
+        'repo_id' => rand(1,200)
     ];
+});
+
+$factory->define(App\Repolist::class, function() {
+   return [
+      'repo_id' => rand(1,100),
+      'type' => rand(0,1),
+      'item_id' => rand(1,2000),
+      'status' => rand(0,1)
+   ]; 
 });

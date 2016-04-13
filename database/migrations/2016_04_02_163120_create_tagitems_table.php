@@ -15,11 +15,11 @@ class CreateTagitemsTable extends Migration
         Schema::create('tagitems', function (Blueprint $table) {
             $table->integer('tag_id')->unsigned();
             $table->integer('item_id')->unsigned();
-            $table->string('tagitem_type',20);
+            $table->string('tagitems_type',20);
             $table->timestamps();
             
-            $table->index(['item_id', 'tagitem_type']);
-            $table->index(['tag_id', 'tagitem_type']);
+            $table->index(['item_id', 'tagitems_type']);
+            $table->index(['tag_id', 'tagitems_type']);
         });
     }
 

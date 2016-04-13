@@ -99,6 +99,7 @@ function addTagsToRepo($itemList) {
     foreach($itemList as $item) {
         $item['tags'] = isset($TagRepoById[$item->id]) ? $TagRepoById[$item->id] : [] ;
     }
+    return $itemList;
 }
 //link批量加tag
 function addTagsToLink($itemList) {
@@ -121,8 +122,9 @@ function addTagsToLink($itemList) {
         $TagLinkById[$tagLink->item_id][] = $GetTag[$tagLink->tag_id];
     }
     foreach($itemList as $item) {
-        $item['tags'] = isset($TagLinkById[$item->id]) ? $TagLinkById[$item->id] :null ;
+        $item['tags'] = isset($TagLinkById[$item->id]) ? $TagLinkById[$item->id] :[] ;
     } 
+    return $itemList;
 }
 
 //传入object , showall 1为显示全部 0为权限不足隐藏隐藏仓库
@@ -167,7 +169,7 @@ function getRecentItems($repoList, $showAll, $limit) {
                         ->get();
         addTagsToLink($recentLinks);
         foreach($recentLinks as $recentLink) {
-            $getRecentById[1][$recentLink->id][] = $recentLink;
+            $getRecentById[1][$recentLink->id] = $recentLink;
         }
     }
     if(!empty($searchRepo)) {
@@ -181,20 +183,22 @@ function getRecentItems($repoList, $showAll, $limit) {
     }  
     $setRepoById = array();   
     foreach ($recentItems as $recentItem) {
-        if( count(isset($setRepoById[$recentItem->repo_id]['recentItems'])?
-                            $setRepoById[$recentItem->repo_id]['recentItems']:null ) >= $limit ) {
+        if( count(isset($setRepoById[$recentItem->repo_id])?
+                            $setRepoById[$recentItem->repo_id]:null ) >= $limit ) {
           continue; 
         }
         if($recentItem->type == 1) { 
             $setRepoById[$recentItem->repo_id][] = [
                                                 'link' => $getRecentById[$recentItem->type][$recentItem->item_id], 
-                                                'type' => $recentItem->type
+                                                'type' => $recentItem->type,
+                                                'created_at' => $recentItem->toArray()['created_at']
                                                 ];
         }
         if($recentItem->type == 0) {
             $setRepoById[$recentItem->repo_id][] = [
                                                 'repository' => $getRecentById[$recentItem->type][$recentItem->item_id], 
-                                                'type' => $recentItem->type
+                                                'type' => $recentItem->type,
+                                                'created_at' => $recentItem->toArray()['created_at']
                                                 ];
         }
     }

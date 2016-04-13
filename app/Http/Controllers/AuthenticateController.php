@@ -16,6 +16,7 @@ use App\TagRepo;
 use App\TagLink;
 use App\Exceptions;
 use Hash;
+use DB;
 
 class AuthenticateController extends Controller
 {
@@ -40,8 +41,6 @@ class AuthenticateController extends Controller
         } catch (\Exceptions $e) {
             return response()->json(['error' => 'no this user or wrong email'], 400);
         }
-        addTagsToRepo($user->starlist);
-        addTagsToRepo($user->repositories);
         $package = [
                     "token" => $token, 
                     "expired_at" => time()+86400, 
@@ -52,8 +51,8 @@ class AuthenticateController extends Controller
                                 'sign' => $user->sign,
                                 'repoNum' => $user->repoNum,
                                 'starNum' => $user->starNum,
-                                'starlist' => getRecentItems($user->starlist, 1, 10),
-                                'repositories' => getRecentItems($user->repositories, 1, 10)
+                                'starlist' => getRecentItems(addTagsToRepo($user->starlist->take(3)), 1, 3),
+                                'repositories' => getRecentItems(addTagsToRepo($user->repositories->take(3)), 1, 3)
                               ]
                     ];
         return response()->json($package);
@@ -151,8 +150,6 @@ class AuthenticateController extends Controller
         
         $starlist = $user->starlist()->where('status', 1)->orderBy('updated_at', 'DESC')->take($starListMax)->get();
         $repositories = $user->repositories()->where('status', 1)->orderBy('updated_at', 'DESC')->take($repositoriesMax)->get();
-        addTagsToRepo($user->starlist);
-        addTagsToRepo($user->repositories);
         $userinfo = [
                     'sign'     => $user->sign, 
                     'email'    => $user->email, 
@@ -160,8 +157,8 @@ class AuthenticateController extends Controller
                     'id' => $user->id,
                     'repoNum' => $user->repoNum,
                     'starNum' => $user->starNum,
-                    'starlist' => getRecentItems($user->starlist, 1, 10),
-                    'repositories' => getRecentItems($user->repositories, 1, 10)
+                    'starlist' => getRecentItems(addTagsToRepo($starlist), 0, 3),
+                    'repositories' => getRecentItems(addTagsToRepo($repositories), 0, 3)
                     ];
         return response()->json($userinfo);
     }
@@ -171,12 +168,27 @@ class AuthenticateController extends Controller
             'offset'      => 'integer',
             'limit'       => 'integer',
             'recentItems' => 'integer|max:12',
-            'token'       => 'string'
+            'token'       => 'string',
+            'orderby'     => 'string'
         ]);
         $token = $request->input('token');
         $limit = $request->input('limit', 12);
         $offset = $request->input('offset', 0);
         $recentItems = $request->input('recentItems', 3);
+        $inputOrder = $request->input('orderby', 'recent updated');
+        $orderIndex = [ 'recent updated' => 'updated_at',
+                        'most star' => 'stars',
+                        'most items' => 'repoNum+linkNum'
+                      ];
+        if( isset($orderIndex[$inputOrder]) ) {
+            $orderBy = $orderIndex[$inputOrder];
+        }
+        else {
+            $orderBy = 'updated_at';
+        }
+        // recent updated => updated_at
+        // most star => stars
+        // most item => repoNum+linkNum
         if(!empty($token)) {
              try{
                  $user = JWTAuth::authenticate($token);
@@ -187,19 +199,19 @@ class AuthenticateController extends Controller
         if(!empty($token) && !empty($user->id) ) {
             if($user->id == $userId ) {
                 $repoList = Repository::where('creator_id', $userId)
-                                    ->orderBy('updated_at', 'DESC')
-                                    ->skip($offset)
-                                    ->take($limit)
-                                    ->get();
-                $response = ['showAll' => 1];
+                                      ->orderByRaw($orderBy.' DESC')
+                                      ->skip($offset)
+                                      ->take($limit)
+                                      ->get();
+                $response['showAll'] = 1;
             }
             else{
                 $repoList = Repository::where('creator_id', $userId)->where('status', 1)
-                                ->orderBy('updated_at', 'DESC')
-                                ->skip($offset)
-                                ->take($limit)
-                                ->get();
-                $response = ['showAll' => 0];
+                                      ->orderByRaw($orderBy.' DESC')
+                                      ->skip($offset)
+                                      ->take($limit)
+                                      ->get();
+                $response['showAll'] = 0;
                 try{
                     $user = User::findOrFail($userId);
                 } catch(\Exception $e) {
@@ -208,12 +220,14 @@ class AuthenticateController extends Controller
             }
         }
         else{
+           // $repoList = Repository::select('select * from repositories where creator_id = :id order by linkNum+repoNum DESC', ['id' => 1])->get();
+             //dd($orderBy);
              $repoList = Repository::where('creator_id', $userId)->where('status', 1)
-                                  ->orderBy('updated_at', 'DESC')
-                                  ->skip($offset)
-                                  ->take($limit)
-                                  ->get();
-             $response = ['showAll' => 0];
+                                   ->orderByRaw($orderBy.' DESC')
+                                   ->skip($offset)
+                                   ->take($limit)
+                                   ->get();
+             $response['showAll'] = 0;
              try{
                 $user = User::findOrFail($userId);
              } catch(\Exception $e) {
@@ -222,7 +236,7 @@ class AuthenticateController extends Controller
         }
         $count = count($repoList->toArray());
         $response['repoList'] = array();
-        if($guest) {
+        if( !$response['showAll']) {
             $response['repoNumAll'] = Repository::where('creator_id', $userId)->where('status', 1)->count();
         }
         else {

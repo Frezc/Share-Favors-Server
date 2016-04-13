@@ -21,6 +21,12 @@ class DatabaseSeeder extends Seeder
             for ($i=0; $i < 5; $i++) { 
                 $u->repositories()->save(factory('App\Repository')->make() );
             }
+            for ($i=0; $i < 5; $i++) {
+                factory('App\Starlist')->create([
+                    'user_id' => $u->id,
+                    'repo_id' => rand($i*40, ($i+1)*40)
+                ]);
+            }
         });
         factory('App\Repository', 100)->create()->each(function($r) {
              factory('App\Repolist')->create([
@@ -28,6 +34,16 @@ class DatabaseSeeder extends Seeder
                         'type' => 0,
                         'item_id' => $r->id,
                         'status' => rand(0,1)
+                    ]);
+             factory('App\TagItem')->create([
+                        'tag_id' => rand(1,5),
+                        'item_id' => $r->id,
+                        'tagitems_type' => 'App\Repository'
+                    ]);
+             factory('App\TagItem')->create([
+                        'tag_id' => rand(6,10),
+                        'item_id' => $r->id,
+                        'tagitems_type' => 'App\Repository'
                     ]);
         });
         factory('App\Link', 1000)->create([
@@ -39,8 +55,13 @@ class DatabaseSeeder extends Seeder
                         'item_id' => $l->id,
                         'status' => 1
                     ]);
-                    factory('App\TagItem', 2)->create([
-                        'tag_id' => rand(1,10),
+                    factory('App\TagItem')->create([
+                        'tag_id' => rand(1,5),
+                        'item_id' => $l->id,
+                        'tagitems_type' => 'App\Link'
+                    ]);
+                    factory('App\TagItem')->create([
+                        'tag_id' => rand(6,10),
                         'item_id' => $l->id,
                         'tagitems_type' => 'App\Link'
                     ]);
@@ -52,8 +73,13 @@ class DatabaseSeeder extends Seeder
                         'item_id' => $l->id,
                         'status' => 1
                     ]);
-                    factory('App\TagItem', 2)->create([
-                        'tag_id' => rand(1,10),
+                    factory('App\TagItem')->create([
+                        'tag_id' => rand(1,5),
+                        'item_id' => $l->id,
+                        'tagitems_type' => 'App\Link'
+                    ]);
+                    factory('App\TagItem')->create([
+                        'tag_id' => rand(6,10),
                         'item_id' => $l->id,
                         'tagitems_type' => 'App\Link'
                     ]);

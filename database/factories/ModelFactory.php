@@ -16,26 +16,26 @@ $factory->define(App\User::class, function (Faker\Generator $faker) {
         'nickname' => $faker->name,
         'email' => str_random(10).'@gmail.com',
         'password' => bcrypt('secret'),
-        'sign' => str_random(10)
+        'sign' => $faker->realText($maxNbChars = 10, $indexSize = 2)
     ];
 });
 
 $factory->define(App\Repository::class, function ($faker) {
    return [
-        'title' => 'test repo title '.str_random(6),
+        'title' => 'test repo title '.$faker->realText($maxNbChars = 10, $indexSize = 2),
         'creator_id' => rand(1,20),
         'creator_name' => $faker->name,
         'status' => rand(0,1),
         'stars' => rand(0,100),
-        'description' => str_random(9)
+        'description' => $faker->realText($maxNbChars = 200, $indexSize = 2)
    ];
 });
 
 $factory->define(App\Link::class, function ($faker) {
    return [
-        'title' => 'test link title '.str_random(6),
+        'title' => 'test link title '.$faker->realText($maxNbChars = 10, $indexSize = 2),
         'url' => $faker->url,
-        'description' => str_random(9),
+        'description' => $faker->realText($maxNbChars = 200, $indexSize = 2),
         'repo_id' => rand(1,100)
    ];
 });

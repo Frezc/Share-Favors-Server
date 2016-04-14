@@ -10,7 +10,8 @@
 | database. Just tell the factory how a default model should look.
 |
 */
-
+use App\User;
+use App\Repository;
 $factory->define(App\User::class, function (Faker\Generator $faker) {
     return [
         'nickname' => $faker->name,
@@ -21,10 +22,12 @@ $factory->define(App\User::class, function (Faker\Generator $faker) {
 });
 
 $factory->define(App\Repository::class, function ($faker) {
+   $creator_id = rand(1,20);
+   $user = User::find($creator_id);
    return [
         'title' => 'test repo title '.$faker->realText($maxNbChars = 10, $indexSize = 2),
-        'creator_id' => rand(1,20),
-        'creator_name' => $faker->name,
+        'creator_id' => $creator_id,
+        'creator_name' => $user->nickname,
         'status' => rand(0,1),
         'stars' => rand(0,100),
         'description' => $faker->realText($maxNbChars = 200, $indexSize = 2)

@@ -1,7 +1,12 @@
 <?php
 
 use Illuminate\Database\Seeder;
-
+use App\Repository;
+use App\Starlist;
+use App\TagItem;
+use App\Repolist;
+use App\User;
+use App\Tag;
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -9,6 +14,7 @@ class DatabaseSeeder extends Seeder
      *
      * @return void
      */
+    
     public function run()
     {
         $tag = array('呆', '萌', '蠢', '2', '黑丝', '白丝', '御姐', '萝莉', 'F♂A', '胖次');
@@ -84,6 +90,24 @@ class DatabaseSeeder extends Seeder
                         'tagitems_type' => 'App\Link'
                     ]);
                 });
-       factory('App\Starlist', 60)->create();
+        $repos = Repository::where('deleted_at', null)->get();
+        $users = User::all();
+        $tags = Tag::all();
+        foreach($repos as $thisRepo) {
+            $thisRepo->repoNum = Repolist::where('repo_id', $thisRepo->id)->where('type', 0)->count();
+            $thisRepo->linkNum = Repolist::where('repo_id', $thisRepo->id)->where('type', 1)->count(); 
+            $thisRepo->stars = Starlist::where('repo_id', $thisRepo->id)->count();
+            $thisRepo->save();
+        } 
+        foreach($users as $user) {
+            $user->repoNum = Repository::where('creator_id', $user->id)->count();
+            $user->starNum = Starlist::where('user_id', $user->id)->count();
+            $user->save();
+        }
+        foreach($tags as $tag) {
+            $tag->used = TagItem::where('tag_id', $tag->id)->count();
+            $tag->save();
+        }
     }
+    
 }

@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         }
         factory('App\User', 20)->create()->each(function($u) {
             for ($i=0; $i < 5; $i++) { 
-                $u->repositories()->save(factory('App\Repository')->make() );
+                $u->repositories()->save(factory('App\Repository')->create(['creator_name' => $u->nickname]) );
             }
             for ($i=0; $i < 5; $i++) {
                 factory('App\Starlist')->create([

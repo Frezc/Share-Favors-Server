@@ -15,6 +15,7 @@ use App\Link;
 use App\TagRepo;
 use App\TagLink;
 use App\Exceptions;
+use App\Starlist;
 use Hash;
 use DB;
 
@@ -303,10 +304,10 @@ class AuthenticateController extends Controller
         $response['repoNum'] = count($starlist);
         $response['repoList'] = getRecentItems($starlist, $response['showAll'], $recentItems);
         if(!$response['showAll']) {
-            $response['repoNumAll'] = Repository::where('creator_id', $userId)->where('status', 1)->count();
+            $response['repoNumAll'] = Starlist::where('user_id', $userId)->where('status', 1)->count();
         }
         else {
-            $response['repoNumAll'] = Repository::where('creator_id', $userId)->count();
+            $response['repoNumAll'] = Starlist::where('user_id', $userId)->count();
         }
         return response()->json($response);
     }

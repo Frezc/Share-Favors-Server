@@ -77,8 +77,8 @@ class AuthenticateController extends Controller
                                 'sign' => $user->sign,
                                 'repoNum' => $user->repoNum,
                                 'starNum' => $user->starNum,
-                                'starlist' => getRecentItems($user->starlist, 1, 10),
-                                'repositories' => getRecentItems($user->repositories, 1, 10)
+                                'starlist' => getRecentItems($user->starlist, 1, 3),
+                                'repositories' => getRecentItems($user->repositories, 1, 3)
                               ]
                     ];
         return response()->json($package);

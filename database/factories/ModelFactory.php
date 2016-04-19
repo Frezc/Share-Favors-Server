@@ -30,7 +30,7 @@ $factory->define(App\Repository::class, function ($faker) {
         'creator_name' => $user->nickname,
         'status' => rand(0,1),
         'stars' => rand(0,100),
-        'description' => $faker->realText($maxNbChars = 200, $indexSize = 2)
+        'description' => $faker->realText($maxNbChars = 2000, $indexSize = 2)
    ];
 });
 
@@ -38,7 +38,7 @@ $factory->define(App\Link::class, function ($faker) {
    return [
         'title' => 'test link title '.$faker->realText($maxNbChars = 10, $indexSize = 2),
         'url' => $faker->url,
-        'description' => $faker->realText($maxNbChars = 200, $indexSize = 2),
+        'description' => $faker->realText($maxNbChars = 2000, $indexSize = 2),
         'repo_id' => rand(1,100)
    ];
 });

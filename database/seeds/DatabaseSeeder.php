@@ -34,6 +34,11 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
         });
+        $user = User::find(2);
+        factory('App\Repository', 1000)->create([
+                               'creator_id' => 2,
+                               'creator_name' => $user->nickname
+                               ]);
         factory('App\Repository', 100)->create()->each(function($r) {
              factory('App\Repolist')->create([
                         'repo_id' => rand(1,100),
